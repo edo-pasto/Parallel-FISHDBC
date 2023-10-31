@@ -4,8 +4,6 @@ setup.cfg
 setup.py
 flexible_clustering/__init__.py
 flexible_clustering/class_test.py
-flexible_clustering/create_text_dataset.py
-flexible_clustering/example_search_hnswlib.py
 flexible_clustering/extsort.py
 flexible_clustering/fishdbc.py
 flexible_clustering/fishdbc_example.py
@@ -17,7 +15,6 @@ flexible_clustering/hnswlib_example.py
 flexible_clustering/optics.py
 flexible_clustering/pdict.py
 flexible_clustering/plot_optics.py
-flexible_clustering/script.py
 flexible_clustering/test_HNSW_parallel2.0.py
 flexible_clustering/test_case_parallel.py
 flexible_clustering/test_case_single.py

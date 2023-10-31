@@ -83,7 +83,7 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("fork")
     ## ---------------------- BLOB DATASET NUMERICAL --------------------------- ##
     # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    data, labels = sklearn.datasets.make_blobs(20000, centers=5, random_state=10)
+    data, labels = sklearn.datasets.make_blobs(100, centers=5, random_state=10)
     # np.random.shuffle(data)
     # Y = data[20000:]
     # data = data[:20000]
@@ -130,36 +130,13 @@ if __name__ == "__main__":
     time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
     print("The time of execution Single MST:", (time_singleMST))
     labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
-
-    with open("../dataResults/singleMST.csv", "a") as text_file:
-        text_file.write(str(time_singleMST) + "\n")
-
-    df = pd.read_csv('../dataResults/singleMST.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ SINGLE MST TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
-
     # print("Final Clustering NOT Parallel: ",ctree)
     # print("labels result from cluster: ", list(labels_cluster))
     end_single = time.time()
-    time_singleFISHDBC = end_single - start_single
     print(
         "The time of execution Single FISHDBC:",
-        "{:.3f}".format(time_singleFISHDBC),
+        "{:.2f}".format(end_single - start_single),
     )
-
-    with open("../dataResults/singleFISHDBC.csv", "a") as text_file:
-        text_file.write(str(time_singleFISHDBC) + "\n")
-
-    df = pd.read_csv('../dataResults/singleFISHDBC.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ SINGLE FISHDBC TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
-
     print(
         "___________________________________________________________________________________________\n"
     )
@@ -227,7 +204,7 @@ if __name__ == "__main__":
         np.ndarray(npArray.shape, dtype=float, buffer=shm2.buf)[:, :] = MISSING_WEIGHT
         shm_weights.append(shm2)
 
-    num_processes = 1
+    num_processes = 16
     manager = multiprocessing.Manager()
     lock = manager.Lock()
     # create the hnsw parallel class object and execute with pool the add function in multiprocessing
@@ -321,39 +298,27 @@ if __name__ == "__main__":
     end = time.time()
     time_globalMST = end - start
     print("The time of execution of global MST is :", "{:.3f}".format(time_globalMST))
-    time_parallelMST = time_localMST[0] + time_globalMST
     print(
         "The total time of execution of MST is :",
-        "{:.3f}".format(time_parallelMST),
+        "{:.3f}".format(time_localMST[0] + time_globalMST),
     )
-
-    with open("../dataResults/parallelMST.csv", "a") as text_file:
-        text_file.write(str(time_parallelMST) + "\n")
-
-    df = pd.read_csv('../dataResults/parallelMST.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ PARALLEL MST TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
     n = len(data)
     labels_cluster_par, _, _, ctree, _, _ = fishdbc1.cluster(final_mst, parallel=True)
-    # print("Final Clustering Parallel: ", ctree, "\n")
+    print("Final Clustering Parallel: ", ctree, "\n")
     # print("labels result from cluster PAR: ", list(labels_cluster_par), "\n")
     end = time.time()
     time_parallelFISHDBC = "{:.3f}".format(end - start_time)
     print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
 
-    with open("../dataResults/parallelFISHDBC.csv", "a") as text_file:
-        text_file.write(str(time_parallelFISHDBC) + "\n")
+    # with open("../dataResults/parallelFISHDBC.csv", "a") as text_file:
+    #     text_file.write(str(time_parallelFISHDBC) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelFISHDBC.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ PARALLEL FISHDBC TIME -----")
-    print("Mean of execution time: ", "{:.3f}".format(average))
-    print("Standard Deviation of execution time: ", "{:.3f}".format(np.std(np.array( list(df["time"])))))
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
+    # df = pd.read_csv('../dataResults/parallelFISHDBC.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("Mean of execution time: ", "{:.3f}".format(average))
+    # print("Standard Deviation of execution time: ", "{:.3f}".format(np.std(np.array( list(df["time"])))))
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
     print(
         "___________________________________________________________________________________________\n"
