@@ -31,12 +31,12 @@ MISSING = sys.maxsize
 MISSING_WEIGHT = sys.float_info.max
 
 
-def calc_dist(x, y):
-    return np.linalg.norm(x - y)
+# def calc_dist(x, y):
+#     return np.linalg.norm(x - y)
 
 
-# def calc_dist(x,y):
-#     return lev(x[0], y[0])
+def calc_dist(x,y):
+    return lev(x[0], y[0])
 
 
 def split(a, n):
@@ -83,24 +83,24 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("fork")
     ## ---------------------- BLOB DATASET NUMERICAL --------------------------- ##
     # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    data, labels = sklearn.datasets.make_blobs(20000, centers=5, random_state=10)
+    # data, labels = sklearn.datasets.make_blobs(20000, centers=5, random_state=10)
     # np.random.shuffle(data)
     # Y = data[20000:]
     # data = data[:20000]
 
     ## ----------------------- SYNTH DATASET TEXTUAL ---------------------------- ##
-    #     realData = pd.read_csv('../data/textDataset40.csv', index_col=False)
-    #     labels = pd.read_csv('../data/textDatasetLabels40.csv', index_col=False)
-    #     # labels = list(labels["label"])
-    #     labels = labels.values
-    #     li = realData.values.tolist()
-    #     data = np.asarray(li)
-    #     shuffled_indices = np.arange(len(data))
-    #     np.random.shuffle(shuffled_indices)
-    #    # Use the shuffled indices to rearrange both elements and labels
-    #     data = data[shuffled_indices]
-    #     labels = labels[shuffled_indices]
-    #     labels = [item for sublist in labels for item in sublist]
+    realData = pd.read_csv('../data/textDataset40.csv', index_col=False)
+    labels = pd.read_csv('../data/textDatasetLabels40.csv', index_col=False)
+    # labels = list(labels["label"])
+    labels = labels.values
+    li = realData.values.tolist()
+    data = np.asarray(li)
+    shuffled_indices = np.arange(len(data))
+    np.random.shuffle(shuffled_indices)
+    # Use the shuffled indices to rearrange both elements and labels
+    data = data[shuffled_indices]
+    labels = labels[shuffled_indices]
+    labels = [item for sublist in labels for item in sublist]
 
     ## ----------------------- SYNTH DATASET NUMERICAL ---------------------------- ##
     # realIntData = pd.read_csv('../data/banana.csv')
@@ -124,17 +124,16 @@ if __name__ == "__main__":
     fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
     single_cand_edges = fishdbc2.update(data)
     graphs = fishdbc2.the_hnsw._graphs
-    print(graphs[0][4])
     time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
     print("The time of execution Single HNSW:", (time_singleHNSW))
     time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
     print("The time of execution Single MST:", (time_singleMST))
     labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
 
-    with open("../dataResults/singleMST.csv", "a") as text_file:
+    with open("../dataResults/singleMSTText.csv", "a") as text_file:
         text_file.write(str(time_singleMST) + "\n")
 
-    df = pd.read_csv('../dataResults/singleMST.csv')
+    df = pd.read_csv('../dataResults/singleMSTText.csv')
     average = df.loc[:,"time"].mean()
     print("------ SINGLE MST TIME -----")
     print("Mean of execution time: ", average)
@@ -150,10 +149,10 @@ if __name__ == "__main__":
         "{:.3f}".format(time_singleFISHDBC),
     )
 
-    with open("../dataResults/singleFISHDBC.csv", "a") as text_file:
+    with open("../dataResults/singleFISHDBCText.csv", "a") as text_file:
         text_file.write(str(time_singleFISHDBC) + "\n")
 
-    df = pd.read_csv('../dataResults/singleFISHDBC.csv')
+    df = pd.read_csv('../dataResults/singleFISHDBCText.csv')
     average = df.loc[:,"time"].mean()
     print("------ SINGLE FISHDBC TIME -----")
     print("Mean of execution time: ", average)
@@ -227,7 +226,7 @@ if __name__ == "__main__":
         np.ndarray(npArray.shape, dtype=float, buffer=shm2.buf)[:, :] = MISSING_WEIGHT
         shm_weights.append(shm2)
 
-    num_processes = 1
+    num_processes = 16
     manager = multiprocessing.Manager()
     lock = manager.Lock()
     # create the hnsw parallel class object and execute with pool the add function in multiprocessing
@@ -265,12 +264,15 @@ if __name__ == "__main__":
     # time_parHNSW = "{:.2f}".format(end_time_hnsw_par-start_time_hnsw_par)
     # print("The time of execution of Paralell HNSW is :", (time_parHNSW))
     partial_mst = []
+    mst_times = []
+    # for i in range(len(data[:200])):
     hnsw.hnsw_add(0)
     pool = multiprocessing.Pool(num_processes)
-    for local_mst in pool.map(
+    for local_mst, mst_time in pool.map(
         hnsw.add_and_compute_local_mst, split(range(1, len(data)), num_processes)
     ):
         # candidate_edges.extend(partial_mst)
+        mst_times.append(mst_time)
         partial_mst.extend(local_mst)
     pool.close()
     pool.join()
@@ -278,10 +280,10 @@ if __name__ == "__main__":
     end_time_hnsw_par = time.time()
     time_parHNSW = "{:.2f}".format(end_time_hnsw_par - start_time_hnsw_par)
     print("The time of execution of Paralell HNSW and local MSTs is :", (time_parHNSW))
-    time_localMST = np.ndarray(shape=(1), dtype=float, buffer=shm_time_localMST.buf)
+    time_localMST = np.mean(mst_times)
     print(
         "The time of execution of Paralell local MSTs is :",
-        "{:.3f}".format(time_localMST[0]),
+        "{:.3f}".format(time_localMST),
     )
 
     ## ------------------- TAKE AND SAVE TIME OF HNSW PARALLEL ----------------
@@ -321,16 +323,16 @@ if __name__ == "__main__":
     end = time.time()
     time_globalMST = end - start
     print("The time of execution of global MST is :", "{:.3f}".format(time_globalMST))
-    time_parallelMST = time_localMST[0] + time_globalMST
+    time_parallelMST = time_localMST + time_globalMST
     print(
         "The total time of execution of MST is :",
         "{:.3f}".format(time_parallelMST),
     )
 
-    with open("../dataResults/parallelMST.csv", "a") as text_file:
+    with open("../dataResults/parallelMSTText.csv", "a") as text_file:
         text_file.write(str(time_parallelMST) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelMST.csv')
+    df = pd.read_csv('../dataResults/parallelMSTText.csv')
     average = df.loc[:,"time"].mean()
     print("------ PARALLEL MST TIME -----")
     print("Mean of execution time: ", average)
@@ -345,10 +347,10 @@ if __name__ == "__main__":
     time_parallelFISHDBC = "{:.3f}".format(end - start_time)
     print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
 
-    with open("../dataResults/parallelFISHDBC.csv", "a") as text_file:
+    with open("../dataResults/parallelFISHDBCText.csv", "a") as text_file:
         text_file.write(str(time_parallelFISHDBC) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelFISHDBC.csv')
+    df = pd.read_csv('../dataResults/parallelFISHDBCText.csv')
     average = df.loc[:,"time"].mean()
     print("------ PARALLEL FISHDBC TIME -----")
     print("Mean of execution time: ", "{:.3f}".format(average))

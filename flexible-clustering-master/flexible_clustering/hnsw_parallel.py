@@ -59,16 +59,12 @@ class HNSW:
         self.distance_cache = {}
         self.shm_enter_point = shm_enter_point
         self.shm_count = shm_count
-        self.shm_time_localMST = shm_time_localMST
         # self.shm_hnsw_data = shm_hnsw_data
         self.sh_point = np.ndarray(shape=(1), dtype=int, buffer=shm_enter_point.buf)
         self.hnsw_data = np.ndarray(
             shape=(self.dim), dtype=int, buffer=shm_hnsw_data.buf
         )
         self.sh_count = np.ndarray(shape=(1), dtype=int, buffer=shm_count.buf)
-        self.time_localMST = np.ndarray(
-            shape=(1), dtype=float, buffer=shm_time_localMST.buf
-        )
 
         self.members = members
         self.levels = levels
@@ -114,14 +110,12 @@ class HNSW:
         distances = []
         for point in points:
             distances.append(self.hnsw_add(point))
-        time_localMST = np.ndarray(
-            shape=(1), dtype=float, buffer=self.shm_time_localMST.buf
-        )
+        time_localMST = 0
         start = time.time()
         local_mst = self.local_mst(distances, points)
         end = time.time()
-        time_localMST[0] = end - start
-        return local_mst
+        time_localMST = end - start
+        return local_mst, time_localMST
 
     def hnsw_add(self, elem):
         distance_cache = {}
@@ -698,7 +692,7 @@ class HNSW:
                 final_mst.append((mrd, i, j, dist))
         return final_mst
 
-        # def global_mst(self, distances_cache):
+    # def global_mst(self, distances_cache):
 
         candidate_edges = []
         nh = []
