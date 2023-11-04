@@ -54,14 +54,14 @@ def gen_labels(n_centroids: int, samples_per_cluster: int):
 
 if __name__ == "__main__":
     tot_labels = []
-    for cluster in gen_dataset(10, 20, 16000, 4):
+    for cluster in gen_dataset(5, 20, 20000, 4):
         for string in cluster:
-            with open("../data/textDataset160.csv", "a") as text_file:
+            with open("../data/textDataset100.csv", "a") as text_file:
                 text_file.write(string + "\n")
 
-    for labels in gen_labels(10, 16000):
+    for labels in gen_labels(5, 20000):
         tot_labels.append(labels)
-        with open("../data/textDatasetLabels160.csv", "a") as text_file:
+        with open("../data/textDatasetLabels100.csv", "a") as text_file:
             text_file.write(str(labels) + "\n")
 
     print(tot_labels)

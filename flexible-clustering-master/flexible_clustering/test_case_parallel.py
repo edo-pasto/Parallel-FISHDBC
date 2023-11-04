@@ -9,7 +9,6 @@ from flexible_clustering import hnsw_parallel
 import sklearn.datasets
 import collections
 from sklearn.neighbors import KDTree
-import numpy as np
 import time
 from itertools import pairwise
 from random import random
@@ -31,12 +30,12 @@ MISSING = sys.maxsize
 MISSING_WEIGHT = sys.float_info.max
 
 
-# def calc_dist(x, y):
-#     return np.linalg.norm(x - y)
+def calc_dist(x, y):
+    return np.linalg.norm(x - y)
 
 
-def calc_dist(x,y):
-    return lev(x[0], y[0])
+# def calc_dist(x,y):
+#     return lev(x[0], y[0])
 
 
 def split(a, n):
@@ -83,24 +82,24 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("fork")
     ## ---------------------- BLOB DATASET NUMERICAL --------------------------- ##
     # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    # data, labels = sklearn.datasets.make_blobs(20000, centers=5, random_state=10)
+    data, labels = sklearn.datasets.make_blobs(10000, centers=5, random_state=10)
     # np.random.shuffle(data)
     # Y = data[20000:]
     # data = data[:20000]
 
     ## ----------------------- SYNTH DATASET TEXTUAL ---------------------------- ##
-    realData = pd.read_csv('../data/textDataset40.csv', index_col=False)
-    labels = pd.read_csv('../data/textDatasetLabels40.csv', index_col=False)
-    # labels = list(labels["label"])
-    labels = labels.values
-    li = realData.values.tolist()
-    data = np.asarray(li)
-    shuffled_indices = np.arange(len(data))
-    np.random.shuffle(shuffled_indices)
-    # Use the shuffled indices to rearrange both elements and labels
-    data = data[shuffled_indices]
-    labels = labels[shuffled_indices]
-    labels = [item for sublist in labels for item in sublist]
+    # realData = pd.read_csv('../data/textDataset10.csv', index_col=False)
+    # labels = pd.read_csv('../data/textDatasetLabels10.csv', index_col=False)
+    # # labels = list(labels["label"])
+    # labels = labels.values
+    # li = realData.values.tolist()
+    # data = np.asarray(li)
+    # shuffled_indices = np.arange(len(data))
+    # np.random.shuffle(shuffled_indices)
+    # # Use the shuffled indices to rearrange both elements and labels
+    # data = data[shuffled_indices]
+    # labels = labels[shuffled_indices]
+    # labels = [item for sublist in labels for item in sublist]
 
     ## ----------------------- SYNTH DATASET NUMERICAL ---------------------------- ##
     # realIntData = pd.read_csv('../data/banana.csv')
@@ -117,51 +116,51 @@ if __name__ == "__main__":
     m = 5
     m0 = 2 * m
     ## ----------------------------------- SINGLE PROCESS ----------------------------------- ##
-    print(
-        "-------------------------- TIME RESULTS - SINGLE PROCESS FISHDBC --------------------------"
-    )
-    start_single = time.time()
-    fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
-    single_cand_edges = fishdbc2.update(data)
-    graphs = fishdbc2.the_hnsw._graphs
-    time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
-    print("The time of execution Single HNSW:", (time_singleHNSW))
-    time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
-    print("The time of execution Single MST:", (time_singleMST))
-    labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
+    # print(
+    #     "-------------------------- TIME RESULTS - SINGLE PROCESS FISHDBC --------------------------"
+    # )
+    # start_single = time.time()
+    # fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
+    # single_cand_edges = fishdbc2.update(data)
+    # graphs = fishdbc2.the_hnsw._graphs
+    # time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
+    # print("The time of execution Single HNSW:", (time_singleHNSW))
+    # time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
+    # print("The time of execution Single MST:", (time_singleMST))
+    # labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
 
-    with open("../dataResults/singleMSTText.csv", "a") as text_file:
-        text_file.write(str(time_singleMST) + "\n")
+    # with open("../dataResults/singleMSTText.csv", "a") as text_file:
+    #     text_file.write(str(time_singleMST) + "\n")
 
-    df = pd.read_csv('../dataResults/singleMSTText.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ SINGLE MST TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
+    # df = pd.read_csv('../dataResults/singleMSTText.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("------ SINGLE MST TIME -----")
+    # print("Mean of execution time: ", average)
+    # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
     # print("Final Clustering NOT Parallel: ",ctree)
     # print("labels result from cluster: ", list(labels_cluster))
-    end_single = time.time()
-    time_singleFISHDBC = end_single - start_single
-    print(
-        "The time of execution Single FISHDBC:",
-        "{:.3f}".format(time_singleFISHDBC),
-    )
+    # end_single = time.time()
+    # time_singleFISHDBC = end_single - start_single
+    # print(
+    #     "The time of execution Single FISHDBC:",
+    #     "{:.3f}".format(time_singleFISHDBC),
+    # )
 
-    with open("../dataResults/singleFISHDBCText.csv", "a") as text_file:
-        text_file.write(str(time_singleFISHDBC) + "\n")
+    # with open("../dataResults/singleFISHDBCText.csv", "a") as text_file:
+    #     text_file.write(str(time_singleFISHDBC) + "\n")
 
-    df = pd.read_csv('../dataResults/singleFISHDBCText.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ SINGLE FISHDBC TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
+    # df = pd.read_csv('../dataResults/singleFISHDBCText.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("------ SINGLE FISHDBC TIME -----")
+    # print("Mean of execution time: ", average)
+    # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
-    print(
-        "___________________________________________________________________________________________\n"
-    )
+    # print(
+    #     "___________________________________________________________________________________________\n"
+    # )
     ## ----------------------------------- PARALLEL HNSW E FISHDBC ----------------------------- ##
     print(
         "-------------------------- TIME RESULTS - MULTI-PROCESS FISHDBC --------------------------"
@@ -265,7 +264,6 @@ if __name__ == "__main__":
     # print("The time of execution of Paralell HNSW is :", (time_parHNSW))
     partial_mst = []
     mst_times = []
-    # for i in range(len(data[:200])):
     hnsw.hnsw_add(0)
     pool = multiprocessing.Pool(num_processes)
     for local_mst, mst_time in pool.map(
@@ -329,15 +327,15 @@ if __name__ == "__main__":
         "{:.3f}".format(time_parallelMST),
     )
 
-    with open("../dataResults/parallelMSTText.csv", "a") as text_file:
-        text_file.write(str(time_parallelMST) + "\n")
+    # with open("../dataResults/parallelMSTText.csv", "a") as text_file:
+    #     text_file.write(str(time_parallelMST) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelMSTText.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ PARALLEL MST TIME -----")
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
+    # df = pd.read_csv('../dataResults/parallelMSTText.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("------ PARALLEL MST TIME -----")
+    # print("Mean of execution time: ", average)
+    # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
     n = len(data)
     labels_cluster_par, _, _, ctree, _, _ = fishdbc1.cluster(final_mst, parallel=True)
@@ -347,15 +345,15 @@ if __name__ == "__main__":
     time_parallelFISHDBC = "{:.3f}".format(end - start_time)
     print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
 
-    with open("../dataResults/parallelFISHDBCText.csv", "a") as text_file:
-        text_file.write(str(time_parallelFISHDBC) + "\n")
+    # with open("../dataResults/parallelFISHDBCText.csv", "a") as text_file:
+    #     text_file.write(str(time_parallelFISHDBC) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelFISHDBCText.csv')
-    average = df.loc[:,"time"].mean()
-    print("------ PARALLEL FISHDBC TIME -----")
-    print("Mean of execution time: ", "{:.3f}".format(average))
-    print("Standard Deviation of execution time: ", "{:.3f}".format(np.std(np.array( list(df["time"])))))
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
+    # df = pd.read_csv('../dataResults/parallelFISHDBCText.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("------ PARALLEL FISHDBC TIME -----")
+    # print("Mean of execution time: ", "{:.3f}".format(average))
+    # print("Standard Deviation of execution time: ", "{:.3f}".format(np.std(np.array( list(df["time"])))))
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
     print(
         "___________________________________________________________________________________________\n"
@@ -416,14 +414,14 @@ if __name__ == "__main__":
         homogeneity_completeness_v_measure,
     )
 
-    # AMI = adjusted_mutual_info_score(labels_cluster,labels_cluster_par)
-    # NMI = normalized_mutual_info_score(labels_cluster,labels_cluster_par)
-    # ARI = adjusted_rand_score(labels_cluster, labels_cluster_par)
-    # RI = rand_score(labels_cluster, labels_cluster_par)
-    homogeneity, completness, v_measure = homogeneity_completeness_v_measure(
-        labels, labels_cluster_par
-    )
-    # clustEval = pd.read_csv("../dataResults/clustEvalText.csv", index_col=False , sep=',')
+    # AMI = adjusted_mutual_info_score(labels,labels_cluster_par)
+    # NMI = normalized_mutual_info_score(labels,labels_cluster_par)
+    # ARI = adjusted_rand_score(labels, labels_cluster_par)
+    # RI = rand_score(labels, labels_cluster_par)
+    # homogeneity, completness, v_measure = homogeneity_completeness_v_measure(
+    #     labels, labels_cluster_par
+    # )
+    # clustEval = pd.read_csv("../dataResults/clustEval.csv", index_col=False , sep=',')
     # clustEval.loc[len(clustEval)] = [AMI,NMI,ARI,RI,homogeneity, completness,v_measure]
     # avgAMI, stdAMI = (np.mean(np.array( list(clustEval["AMI"]))) , np.std(np.array( list(clustEval["AMI"]))) )
     # avgNMI, stdNMI = (np.mean(np.array( list(clustEval["NMI"]))) , np.std(np.array( list(clustEval["AMI"])))  )
@@ -439,23 +437,23 @@ if __name__ == "__main__":
     # print("Std. Dev. AMI: ", "{:.2f}".format(stdAMI),", Std. Dev. NMI: ", "{:.2f}".format(stdNMI), ", Std. Dev. ARI: ",
     #       "{:.2f}".format(stdARI), ", Std. Dev. RI: ", "{:.2f}".format(stdRI),", Std. Dev. Homogeneity: ", "{:.2f}".format(stdH),
     #       ", Std. Dev. Completness: ", "{:.2f}".format(stdC), ", Std. Dev. V-measure: ", "{:.2f}".format(stdV))
-    # clustEval.to_csv('../dataResults/clustEvalText.csv', index=False)
-    print(
-        "Adjsuted Mutual Info Score: ",
-        "{:.2f}".format(adjusted_mutual_info_score(labels, labels_cluster_par)),
-    )
-    print(
-        "Normalized Mutual Info Score: ",
-        "{:.2f}".format(normalized_mutual_info_score(labels, labels_cluster_par)),
-    )
-    print(
-        "Adjusted Rand Score: ",
-        "{:.2f}".format(adjusted_rand_score(labels, labels_cluster_par)),
-    )
-    print("Rand Score: ", "{:.2f}".format(rand_score(labels, labels_cluster_par)))
-    print(
-        "Homogeneity, Completness, V-Measure: ", (homogeneity, completness, v_measure)
-    )
+    # clustEval.to_csv('../dataResults/clustEval.csv', index=False)
+    # print(
+    #     "Adjsuted Mutual Info Score: ",
+    #     "{:.2f}".format(adjusted_mutual_info_score(labels, labels_cluster_par)),
+    # )
+    # print(
+    #     "Normalized Mutual Info Score: ",
+    #     "{:.2f}".format(normalized_mutual_info_score(labels, labels_cluster_par)),
+    # )
+    # print(
+    #     "Adjusted Rand Score: ",
+    #     "{:.2f}".format(adjusted_rand_score(labels, labels_cluster_par)),
+    # )
+    # print("Rand Score: ", "{:.2f}".format(rand_score(labels, labels_cluster_par)))
+    # print(
+    #     "Homogeneity, Completness, V-Measure: ", (homogeneity, completness, v_measure)
+    # )
 
     # close and unlink the shared memory objects
     shm_hnsw_data.close()

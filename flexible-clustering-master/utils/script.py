@@ -216,36 +216,55 @@ import numpy as np
 
 # ---------------------------------------------
 
-df2 = pd.DataFrame(dict(
-    DataSetSize = [10000, 20000, 40000, 80000, 160000],
-    ExecTime_single = [ 3.365, 8.677, 21.702, 54.411, 60.547],
-    ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 35.999],
+# df2 = pd.DataFrame(dict(
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_single = [ 3.365, 8.677, 21.702, 54.411, 60.547],
+#     ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 35.999],
    
-))
+# ))
 
-fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
+# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
 
-fig2.update_layout(
-    legend_title="Approaches",
-    legend_title_font=dict(size=20),
-    legend_font=dict(size=16),
-    titlefont = dict(size=20)
-)
-fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.show()
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
 
 
 # ---------------------------------------------
 
+# df2 = pd.DataFrame(dict(
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_single = [ 12.799, 29.001, 66.417, 151.879, 339.532],
+#     ExecTime_parallel = [ 3.323, 6.894, 14.804, 33.659, 76.783],
+   
+# ))
+
+# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel FISHDBC Algorithm, Blob data set (Remote machine, 16 cores)", markers=True) 
+
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
+# ---------------------------------------------
 df2 = pd.DataFrame(dict(
     DataSetSize = [10000, 20000, 40000, 80000, 160000],
-    ExecTime_single = [ 12.799, 29.001, 66.417, 151.879, 339.532],
-    ExecTime_parallel = [ 3.323, 6.894, 14.804, 33.659, 76.783],
+    ExecTime_single = [ 5.119, 15.658, 34.953, 88.561, 90.613],
+    ExecTime_parallel = [ 1.001, 2.942, 6.203, 15.090, 37.919],
    
 ))
 
-fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel FISHDBC Algorithm, Blob data set (Remote machine, 16 cores)", markers=True) 
+fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time Original Single MST vs. Parallel MST creation, text data sets (remote machine, 16 physical core)", markers=True) 
 
 fig2.update_layout(
     legend_title="Approaches",
@@ -256,3 +275,36 @@ fig2.update_layout(
 fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
 fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 fig2.show()
+
+# ---------------------------------------------
+# df2 = pd.DataFrame(dict(
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_single = [ 15.661, 41.757, 92.022, 218.781, 493.937],
+#     ExecTime_parallel = [ 3.004, 7.134, 14.448, 31.842, 72.534],
+   
+# ))
+
+# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time, Single vs. Parallel FISHDBC algorithm, text data sets (remote machine, 16 physical core)", markers=True) 
+
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
+# ---------------------------------------------
+
+# blob 20,000
+# Mean AMI:  0.96 , Mean NMI:  0.96 , Mean ARI:  0.96 , Mean RI:  0.99 , Mean Homogeneity:  0.99 , Mean Completness:  0.93 , Mean V-measure:  0.96
+# Std. Dev. AMI:  0.02 , Std. Dev. NMI:  0.02 , Std. Dev. ARI:  0.02 , Std. Dev. RI:  0.02 , Std. Dev. Homogeneity:  0.02 , Std. Dev. Completness:  0.02 , Std. Dev. V-measure:  0.02
+
+# text 20,000
+# Mean AMI:  0.94 , Mean NMI:  0.94 , Mean ARI:  0.94 , Mean RI:  0.98 , Mean Homogeneity:  0.99 , Mean Completness:  0.89 , Mean V-measure:  0.94
+# Std. Dev. AMI:  0.03 , Std. Dev. NMI:  0.03 , Std. Dev. ARI:  0.03 , Std. Dev. RI:  0.03 , Std. Dev. Homogeneity:  0.03 , Std. Dev. Completness:  0.03 , Std. Dev. V-measure:  0.03
+
+# text 100,000
+# Mean AMI:  0.93 , Mean NMI:  0.93 , Mean ARI:  0.93 , Mean RI:  0.98 , Mean Homogeneity:  1.00 , Mean Completness:  0.88 , Mean V-measure:  0.93
+# Std. Dev. AMI:  0.03 , Std. Dev. NMI:  0.03 , Std. Dev. ARI:  0.03 , Std. Dev. RI:  0.03 , Std. Dev. Homogeneity:  0.03 , Std. Dev. Completness:  0.03 , Std. Dev. V-measure:  0.03
