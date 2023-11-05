@@ -297,6 +297,68 @@ fig2.show()
 # fig2.show()
 # ---------------------------------------------
 
+# df2 = pd.DataFrame(dict(
+#     NumProcs = [1, 2, 4, 8, 16],
+#     ExecTime_20K = [ 17.328, 9.156, 5.080, 2.991, 2.101],
+#     ExecTime_10K = [109.758, 68.322, 39.911, 25.053, 17.481],
+   
+# ))
+
+# fig2 = px.line(df2, x="NumProcs", y=df2.columns[1:], title="Differences of execution time Parallel MST with different cores , blob data sets (remote machine)", markers=True) 
+
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
+
+# ---------------------------------------------
+
+# df2 = pd.DataFrame(dict(
+#     NumProcs = [1, 2, 4, 8, 16],
+#     ExecTime_20K = [55.43,28.037,14.835,8.230,5.300],
+#     ExecTime_10K = [302.671, 166.978, 89.808, 52.133, 33.122],
+   
+# ))
+
+# fig2 = px.line(df2, x="NumProcs", y=df2.columns[1:], title="Differences of execution time Parallel FISHDBC with different cores , blob data sets (remote machine)", markers=True) 
+
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
+
+# ---------------------------------------------
+
+df2 = pd.DataFrame(dict(
+    NumProcs = [1, 2, 4, 8, 16],
+    ExecTime_20K = [66.289, 28.137, 14.530, 8.121, 5.592],
+    ExecTime_10K = [454.494, 285.75, 151.208, 74.494, 41.05],
+   
+))
+
+fig2 = px.line(df2, x="NumProcs", y=df2.columns[1:], title="Differences of execution time Parallel HNSW with different cores, blob data sets (remote machine)", markers=True) 
+
+fig2.update_layout(
+    legend_title="Approaches",
+    legend_title_font=dict(size=20),
+    legend_font=dict(size=16),
+    titlefont = dict(size=20)
+)
+fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
+fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+fig2.show()
+
+
 # blob 20,000
 # Mean AMI:  0.96 , Mean NMI:  0.96 , Mean ARI:  0.96 , Mean RI:  0.99 , Mean Homogeneity:  0.99 , Mean Completness:  0.93 , Mean V-measure:  0.96
 # Std. Dev. AMI:  0.02 , Std. Dev. NMI:  0.02 , Std. Dev. ARI:  0.02 , Std. Dev. RI:  0.02 , Std. Dev. Homogeneity:  0.02 , Std. Dev. Completness:  0.02 , Std. Dev. V-measure:  0.02
