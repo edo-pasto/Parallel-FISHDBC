@@ -3,19 +3,17 @@ from __future__ import print_function
 
 from heapq import heapify, heappop, heappush, heapreplace, nlargest, nsmallest
 from operator import itemgetter
-from random import random
-from multiprocessing import shared_memory, current_process
 import numpy as np
 import sys
 import time
 import heapq
-
+from .unionfind import UnionFind
 # import time
 # import multiprocessing
+# from random import random
+# from multiprocessing import shared_memory, current_process
 # from functools import partial
 # import timeit
-from .unionfind import UnionFind
-
 # from line_profiler import LineProfiler
 # import cProfile, pstats, io
 # from pstats import SortKey
@@ -46,7 +44,6 @@ class HNSW:
         shm_hnsw_data,
         shm_enter_point,
         shm_count,
-        shm_time_localMST,
         lock,
         m=5,
         ef=32,
@@ -59,7 +56,6 @@ class HNSW:
         self.distance_cache = {}
         self.shm_enter_point = shm_enter_point
         self.shm_count = shm_count
-        # self.shm_hnsw_data = shm_hnsw_data
         self.sh_point = np.ndarray(shape=(1), dtype=int, buffer=shm_enter_point.buf)
         self.hnsw_data = np.ndarray(
             shape=(self.dim), dtype=int, buffer=shm_hnsw_data.buf
@@ -694,69 +690,69 @@ class HNSW:
 
     # def global_mst(self, distances_cache):
 
-        candidate_edges = []
-        nh = []
-        new_edges = {}
-        data = self.data
-        min_samples = self.min_samples
-        minus_infty = -np.infty
-        total_count = 0
-        total_sum = 0
+        # candidate_edges = []
+        # nh = []
+        # new_edges = {}
+        # data = self.data
+        # min_samples = self.min_samples
+        # minus_infty = -np.infty
+        # total_count = 0
+        # total_sum = 0
 
-        for _ in range(len(data)):
-            heap = [(minus_infty, minus_infty)] * min_samples
-            heapq.heapify(heap)
-            nh.append(heap)
+        # for _ in range(len(data)):
+        #     heap = [(minus_infty, minus_infty)] * min_samples
+        #     heapq.heapify(heap)
+        #     nh.append(heap)
 
-        for idx, dist_cache in zip(range(len(data)), distances_cache):
-            if idx in dist_cache:
-                dist_cache.pop(idx)
-            # print(dist_cache, len(dist_cache), idx)
-            total_count += len(dist_cache)
-            # dist_cache = dict(sorted(dist_cache.items(), key=lambda item: item[0]))
-            for j, dist in dist_cache.items():
-                # print(dist, idx, j)
-                total_sum += dist
-                mdist = -dist
-                heapq.heappushpop(nh[idx], (mdist, j))
-                new_edges[j, idx] = dist
+        # for idx, dist_cache in zip(range(len(data)), distances_cache):
+        #     if idx in dist_cache:
+        #         dist_cache.pop(idx)
+        #     # print(dist_cache, len(dist_cache), idx)
+        #     total_count += len(dist_cache)
+        #     # dist_cache = dict(sorted(dist_cache.items(), key=lambda item: item[0]))
+        #     for j, dist in dist_cache.items():
+        #         # print(dist, idx, j)
+        #         total_sum += dist
+        #         mdist = -dist
+        #         heapq.heappushpop(nh[idx], (mdist, j))
+        #         new_edges[j, idx] = dist
 
-                # also update j's reachability distances
-                nh_j = nh[j]
-                old_mrd = heapq.heappushpop(nh_j, (mdist, idx))[0]
-                new_mrd = nh_j[0][0]
-                if old_mrd != new_mrd:
-                    # i is a new close neighbor for j and j's reachability
-                    # distance changed
-                    for md, k in nh_j:
-                        if k == idx or k == minus_infty:
-                            continue
-                        if nh[k][0][0] > old_mrd:
-                            # reachability distance between j and k decreased
-                            key = (j, k) if j < k else (k, j)
-                            new_edges[key] = -min(md, new_mrd)
-            # print("nh", nh, "\n")
-            # print("new edges",new_edges, "\n")
-            # print(idx, " -- distance cache: ",dist_cache, "\n")
-        # print("new edges par: ", new_edges)
-        candidate_edges.extend(
-            (max(dist, -nh[i][0][0], -nh[j][0][0]), i, j, dist)
-            for (i, j), dist in new_edges.items()
-        )
-        heapq.heapify(candidate_edges)
-        # print("parall cand edges: ", candidate_edges)
-        # Kruskal's algorithm
+        #         # also update j's reachability distances
+        #         nh_j = nh[j]
+        #         old_mrd = heapq.heappushpop(nh_j, (mdist, idx))[0]
+        #         new_mrd = nh_j[0][0]
+        #         if old_mrd != new_mrd:
+        #             # i is a new close neighbor for j and j's reachability
+        #             # distance changed
+        #             for md, k in nh_j:
+        #                 if k == idx or k == minus_infty:
+        #                     continue
+        #                 if nh[k][0][0] > old_mrd:
+        #                     # reachability distance between j and k decreased
+        #                     key = (j, k) if j < k else (k, j)
+        #                     new_edges[key] = -min(md, new_mrd)
+        #     # print("nh", nh, "\n")
+        #     # print("new edges",new_edges, "\n")
+        #     # print(idx, " -- distance cache: ",dist_cache, "\n")
+        # # print("new edges par: ", new_edges)
+        # candidate_edges.extend(
+        #     (max(dist, -nh[i][0][0], -nh[j][0][0]), i, j, dist)
+        #     for (i, j), dist in new_edges.items()
+        # )
+        # heapq.heapify(candidate_edges)
+        # # print("parall cand edges: ", candidate_edges)
+        # # Kruskal's algorithm
 
-        mst_edges = []
-        n = len(data)
-        needed_edges = n - 1
-        uf = UnionFind(n)
-        while needed_edges:
-            _, i, j, _ = edge = heapq.heappop(candidate_edges)
-            if uf.union(i, j):
-                mst_edges.append(edge)
-                needed_edges -= 1
-        return mst_edges
+        # mst_edges = []
+        # n = len(data)
+        # needed_edges = n - 1
+        # uf = UnionFind(n)
+        # while needed_edges:
+        #     _, i, j, _ = edge = heapq.heappop(candidate_edges)
+        #     if uf.union(i, j):
+        #         mst_edges.append(edge)
+        #         needed_edges -= 1
+        # return mst_edges
 
     # def _select_heuristic(self, elem_locks, level_to_search, position, elem, to_insert, m, g_adj, g_weights, heap=False):
     #     def priority(idx, dist):

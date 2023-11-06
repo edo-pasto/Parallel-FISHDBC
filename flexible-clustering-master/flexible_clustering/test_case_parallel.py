@@ -15,7 +15,7 @@ from random import random
 
 # import cProfile
 import multiprocessing
-
+from multiprocessing import shared_memory
 try:
     from math import log2
 except ImportError:  # Python 2.x or <= 3.2
@@ -30,12 +30,12 @@ MISSING = sys.maxsize
 MISSING_WEIGHT = sys.float_info.max
 
 
-def calc_dist(x, y):
-    return np.linalg.norm(x - y)
+# def calc_dist(x, y):
+#     return np.linalg.norm(x - y)
 
 
-# def calc_dist(x,y):
-#     return lev(x[0], y[0])
+def calc_dist(x,y):
+    return lev(x[0], y[0])
 
 
 def split(a, n):
@@ -82,24 +82,24 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("fork")
     ## ---------------------- BLOB DATASET NUMERICAL --------------------------- ##
     # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    data, labels = sklearn.datasets.make_blobs(100000, centers=5, random_state=10)
+    # data, labels = sklearn.datasets.make_blobs(160000, centers=5, random_state=10)
     # np.random.shuffle(data)
     # Y = data[20000:]
     # data = data[:20000]
 
     ## ----------------------- SYNTH DATASET TEXTUAL ---------------------------- ##
-    # realData = pd.read_csv('../data/textDataset10.csv', index_col=False)
-    # labels = pd.read_csv('../data/textDatasetLabels10.csv', index_col=False)
-    # # labels = list(labels["label"])
-    # labels = labels.values
-    # li = realData.values.tolist()
-    # data = np.asarray(li)
-    # shuffled_indices = np.arange(len(data))
-    # np.random.shuffle(shuffled_indices)
-    # # Use the shuffled indices to rearrange both elements and labels
-    # data = data[shuffled_indices]
-    # labels = labels[shuffled_indices]
-    # labels = [item for sublist in labels for item in sublist]
+    realData = pd.read_csv('../data/textDataset160.csv', index_col=False)
+    labels = pd.read_csv('../data/textDatasetLabels160.csv', index_col=False)
+    # labels = list(labels["label"])
+    labels = labels.values
+    li = realData.values.tolist()
+    data = np.asarray(li)
+    shuffled_indices = np.arange(len(data))
+    np.random.shuffle(shuffled_indices)
+    # Use the shuffled indices to rearrange both elements and labels
+    data = data[shuffled_indices]
+    labels = labels[shuffled_indices]
+    labels = [item for sublist in labels for item in sublist]
 
     ## ----------------------- SYNTH DATASET NUMERICAL ---------------------------- ##
     # realIntData = pd.read_csv('../data/banana.csv')
@@ -116,18 +116,18 @@ if __name__ == "__main__":
     m = 5
     m0 = 2 * m
     ## ----------------------------------- SINGLE PROCESS ----------------------------------- ##
-    # print(
-    #     "-------------------------- TIME RESULTS - SINGLE PROCESS FISHDBC --------------------------"
-    # )
-    # start_single = time.time()
-    # fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
-    # single_cand_edges = fishdbc2.update(data)
-    # graphs = fishdbc2.the_hnsw._graphs
-    # time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
-    # print("The time of execution Single HNSW:", (time_singleHNSW))
-    # time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
-    # print("The time of execution Single MST:", (time_singleMST))
-    # labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
+    print(
+        "-------------------------- TIME RESULTS - SINGLE PROCESS FISHDBC --------------------------"
+    )
+    start_single = time.time()
+    fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
+    single_cand_edges = fishdbc2.update(data)
+    graphs = fishdbc2.the_hnsw._graphs
+    time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
+    print("The time of execution Single HNSW:", (time_singleHNSW))
+    time_singleMST = "{:.2f}".format(fishdbc2._tot_MST_time)
+    print("The time of execution Single MST:", (time_singleMST))
+    labels_cluster, _, _, ctree, _, _ = fishdbc2.cluster(parallel=False)
 
     # with open("../dataResults/singleMSTText.csv", "a") as text_file:
     #     text_file.write(str(time_singleMST) + "\n")
@@ -141,12 +141,12 @@ if __name__ == "__main__":
 
     # print("Final Clustering NOT Parallel: ",ctree)
     # print("labels result from cluster: ", list(labels_cluster))
-    # end_single = time.time()
-    # time_singleFISHDBC = end_single - start_single
-    # print(
-    #     "The time of execution Single FISHDBC:",
-    #     "{:.3f}".format(time_singleFISHDBC),
-    # )
+    end_single = time.time()
+    time_singleFISHDBC = end_single - start_single
+    print(
+        "The time of execution Single FISHDBC:",
+        "{:.3f}".format(time_singleFISHDBC),
+    )
 
     # with open("../dataResults/singleFISHDBCText.csv", "a") as text_file:
     #     text_file.write(str(time_singleFISHDBC) + "\n")
@@ -158,9 +158,9 @@ if __name__ == "__main__":
     # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
     # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
-    # print(
-    #     "___________________________________________________________________________________________\n"
-    # )
+    print(
+        "___________________________________________________________________________________________\n"
+    )
     ## ----------------------------------- PARALLEL HNSW E FISHDBC ----------------------------- ##
     print(
         "-------------------------- TIME RESULTS - MULTI-PROCESS FISHDBC --------------------------"
@@ -202,12 +202,11 @@ if __name__ == "__main__":
             positions[l][x] = i
 
     # create the buffer of shared memory for each levels
-    shm_hnsw_data = multiprocessing.shared_memory.SharedMemory(
+    shm_hnsw_data = shared_memory.SharedMemory(
         create=True, size=1000000000
     )
-    shm_ent_point = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
-    shm_count = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
-    shm_time_localMST = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
+    shm_ent_point = shared_memory.SharedMemory(create=True, size=10)
+    shm_count = shared_memory.SharedMemory(create=True, size=10)
 
     shm_adj = []
     shm_weights = []
@@ -240,7 +239,6 @@ if __name__ == "__main__":
         shm_hnsw_data,
         shm_ent_point,
         shm_count,
-        shm_time_localMST,
         lock,
         m=m,
         m0=m0,
@@ -252,80 +250,80 @@ if __name__ == "__main__":
     start_time = time.time()
     start_time_hnsw_par = time.time()
     ## COMPUTE ONLY PARALLEL HNSW
-    distances_cache =[]
-    distances_cache.append(hnsw.hnsw_add(0))
+        # distances_cache =[]
+        # distances_cache.append(hnsw.hnsw_add(0))
+        # pool = multiprocessing.Pool(num_processes)
+        # for dist_cache in pool.map(hnsw.hnsw_add, range(1, len(hnsw.data))):
+        #     distances_cache.append(dist_cache)
+        # pool.close()
+        # pool.join()
+        # end_time_hnsw_par = time.time()
+        # time_parHNSW = "{:.2f}".format(end_time_hnsw_par-start_time_hnsw_par)
+        # print("The time of execution of Paralell HNSW is :", (time_parHNSW))
+    partial_mst = []
+    mst_times = []
+    hnsw.hnsw_add(0)
     pool = multiprocessing.Pool(num_processes)
-    for dist_cache in pool.map(hnsw.hnsw_add, range(1, len(hnsw.data))):
-        distances_cache.append(dist_cache)
+    for local_mst, mst_time in pool.map(
+        hnsw.add_and_compute_local_mst, split(range(1, len(data)), num_processes)
+    ):
+        # candidate_edges.extend(partial_mst)
+        mst_times.append(mst_time)
+        partial_mst.extend(local_mst)
     pool.close()
     pool.join()
-    end_time_hnsw_par = time.time()
-    time_parHNSW = "{:.2f}".format(end_time_hnsw_par-start_time_hnsw_par)
-    print("The time of execution of Paralell HNSW is :", (time_parHNSW))
-    # partial_mst = []
-    # mst_times = []
-    # hnsw.hnsw_add(0)
-    # pool = multiprocessing.Pool(num_processes)
-    # for local_mst, mst_time in pool.map(
-    #     hnsw.add_and_compute_local_mst, split(range(1, len(data)), num_processes)
-    # ):
-    #     # candidate_edges.extend(partial_mst)
-    #     mst_times.append(mst_time)
-    #     partial_mst.extend(local_mst)
-    # pool.close()
-    # pool.join()
 
-    # end_time_hnsw_par = time.time()
-    # time_parHNSW = "{:.2f}".format(end_time_hnsw_par - start_time_hnsw_par)
-    # print("The time of execution of Paralell HNSW and local MSTs is :", (time_parHNSW))
-    # time_localMST = np.mean(mst_times)
-    # print(
-    #     "The time of execution of Paralell local MSTs is :",
-    #     "{:.3f}".format(time_localMST),
-    # )
+    end_time_hnsw_par = time.time()
+    time_parHNSW = "{:.2f}".format(end_time_hnsw_par - start_time_hnsw_par)
+    print("The time of execution of Paralell HNSW and local MSTs is :", (time_parHNSW))
+    time_localMST = np.mean(mst_times)
+    print(
+        "The time of execution of Paralell local MSTs is :",
+        "{:.3f}".format(time_localMST),
+    )
 
     ## ------------------- TAKE AND SAVE TIME OF HNSW PARALLEL ----------------
 
-    with open("../dataResults/parallelHNSW.csv", "a") as text_file:
-        text_file.write(str(time_parHNSW) + "\n")
+    # with open("../dataResults/parallelHNSW.csv", "a") as text_file:
+    #     text_file.write(str(time_parHNSW) + "\n")
 
-    df = pd.read_csv('../dataResults/parallelHNSW.csv')
-    average = df.loc[:,"time"].mean()
-    print("Mean of execution time: ", average)
-    print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))))
-    # sh_count = np.ndarray(shape=(1), dtype=int, buffer=shm_count.buf)
-    # print("The nbr of call to distance is :", (sh_count))
+    # df = pd.read_csv('../dataResults/parallelHNSW.csv')
+    # average = df.loc[:,"time"].mean()
+    # print("Mean of execution time: ", average)
+    # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
+    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))))
+    # # sh_count = np.ndarray(shape=(1), dtype=int, buffer=shm_count.buf)
+    # # print("The nbr of call to distance is :", (sh_count))
     ## ------------------------------------------------------------------------
 
     # take the shared numpy array (The HNSW structure) from the shared memory buffer and print them
 
-    # tot_adjs = []
-    # tot_weights = []
-    # for shm1, shm2, memb, i in zip(shm_adj, shm_weights, members, range(len(members))):
-    #     adj = np.ndarray(
-    #         shape=(len(memb), m0 if i == 0 else m), dtype=int, buffer=shm1.buf
-    #     )
-    #     tot_adjs.append(adj)
-    #     weight = np.ndarray(
-    #         shape=(len(memb), m0 if i == 0 else m), dtype=float, buffer=shm2.buf
-    #     )
-    #     tot_weights.append(weight)
-    # # print(tot_adjs, "\n", tot_weights, "\n")
+    tot_adjs = []
+    tot_weights = []
+    for shm1, shm2, memb, i in zip(shm_adj, shm_weights, members, range(len(members))):
+        adj = np.ndarray(
+            shape=(len(memb), m0 if i == 0 else m), dtype=int, buffer=shm1.buf
+        )
+        tot_adjs.append(adj)
+        weight = np.ndarray(
+            shape=(len(memb), m0 if i == 0 else m), dtype=float, buffer=shm2.buf
+        )
+        tot_weights.append(weight)
+    # print(tot_adjs, "\n", tot_weights, "\n")
 
-    # start = time.time()
-    # # perform the final fishdbc operation, the creation of the mst and the final clustering
-    # fishdbc1 = fishdbc.FISHDBC(calc_dist, m, m0, vectorized=False, balanced_add=False)
-    # # final_mst = hnsw.global_mst(distances_cache)
-    # final_mst = hnsw.global_mst(shm_adj, shm_weights, partial_mst, len(data))
-    # end = time.time()
-    # time_globalMST = end - start
-    # print("The time of execution of global MST is :", "{:.3f}".format(time_globalMST))
-    # time_parallelMST = time_localMST + time_globalMST
-    # print(
-    #     "The total time of execution of MST is :",
-    #     "{:.3f}".format(time_parallelMST),
-    # )
+    start = time.time()
+    # perform the final fishdbc operation, the creation of the mst and the final clustering
+    fishdbc1 = fishdbc.FISHDBC(calc_dist, m, m0, vectorized=False, balanced_add=False)
+    # final_mst = hnsw.global_mst(distances_cache)
+    final_mst = hnsw.global_mst(shm_adj, shm_weights, partial_mst, len(data))
+    end = time.time()
+    time_globalMST = end - start
+    print("The time of execution of global MST is :", "{:.3f}".format(time_globalMST))
+    time_parallelMST = time_localMST + time_globalMST
+    print(
+        "The total time of execution of MST is :",
+        "{:.3f}".format(time_parallelMST),
+    )
 
     # with open("../dataResults/parallelMST.csv", "a") as text_file:
     #     text_file.write(str(time_parallelMST) + "\n")
@@ -337,13 +335,13 @@ if __name__ == "__main__":
     # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
     # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
-    # n = len(data)
-    # labels_cluster_par, _, _, ctree, _, _ = fishdbc1.cluster(final_mst, parallel=True)
-    # # print("Final Clustering Parallel: ", ctree, "\n")
-    # # print("labels result from cluster PAR: ", list(labels_cluster_par), "\n")
-    # end = time.time()
-    # time_parallelFISHDBC = "{:.3f}".format(end - start_time)
-    # print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
+    n = len(data)
+    labels_cluster_par, _, _, ctree, _, _ = fishdbc1.cluster(final_mst, parallel=True)
+    # print("Final Clustering Parallel: ", ctree, "\n")
+    # print("labels result from cluster PAR: ", list(labels_cluster_par), "\n")
+    end = time.time()
+    time_parallelFISHDBC = "{:.3f}".format(end - start_time)
+    print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
 
     # with open("../dataResults/parallelFISHDBC.csv", "a") as text_file:
     #     text_file.write(str(time_parallelFISHDBC) + "\n")
@@ -355,9 +353,9 @@ if __name__ == "__main__":
     # print("Standard Deviation of execution time: ", "{:.3f}".format(np.std(np.array( list(df["time"])))))
     # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
-    # print(
-    #     "___________________________________________________________________________________________\n"
-    # )
+    print(
+        "___________________________________________________________________________________________\n"
+    )
     ## ----------------------------------- HNSW - TEST FOR QUALITY OF THE SEARCH RESULTS ----------------------------- ##
 
     # graphs_par = []
@@ -462,8 +460,6 @@ if __name__ == "__main__":
     shm_ent_point.unlink()
     shm_count.unlink()
     shm_count.close()
-    shm_time_localMST.close()
-    shm_time_localMST.unlink()
     for i in range(len(members)):
         shm_adj[i].close()
         shm_adj[i].unlink()

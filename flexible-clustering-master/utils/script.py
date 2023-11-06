@@ -216,24 +216,24 @@ import numpy as np
 
 # ---------------------------------------------
 
-# df2 = pd.DataFrame(dict(
-#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
-#     ExecTime_single = [ 3.365, 8.677, 21.702, 54.411, 60.547],
-#     ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 35.999],
+df2 = pd.DataFrame(dict(
+    DataSetSize = [10000, 20000, 40000, 80000, 160000],
+    ExecTime_single = [ 3.365, 8.677, 21.702, 54.411, 257.097],
+    ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 76.406],
    
-# ))
+))
 
-# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
+fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
 
-# fig2.update_layout(
-#     legend_title="Approaches",
-#     legend_title_font=dict(size=20),
-#     legend_font=dict(size=16),
-#     titlefont = dict(size=20)
-# )
-# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
-# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
-# fig2.show()
+fig2.update_layout(
+    legend_title="Approaches",
+    legend_title_font=dict(size=20),
+    legend_font=dict(size=16),
+    titlefont = dict(size=20)
+)
+fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+fig2.show()
 
 
 # ---------------------------------------------
@@ -259,8 +259,8 @@ import numpy as np
 # ---------------------------------------------
 df2 = pd.DataFrame(dict(
     DataSetSize = [10000, 20000, 40000, 80000, 160000],
-    ExecTime_single = [ 5.119, 15.658, 34.953, 88.561, 90.613],
-    ExecTime_parallel = [ 1.001, 2.942, 6.203, 15.090, 37.919],
+    ExecTime_single = [ 5.119, 15.658, 34.953, 88.561, 473.755],
+    ExecTime_parallel = [ 1.001, 2.942, 6.203, 15.090, 78.435],
    
 ))
 
@@ -339,24 +339,24 @@ fig2.show()
 
 # ---------------------------------------------
 
-df2 = pd.DataFrame(dict(
-    NumProcs = [1, 2, 4, 8, 16],
-    ExecTime_20K = [66.289, 28.137, 14.530, 8.121, 5.592],
-    ExecTime_10K = [454.494, 285.75, 151.208, 74.494, 41.05],
+# df2 = pd.DataFrame(dict(
+#     NumProcs = [1, 2, 4, 8, 16],
+#     ExecTime_20K = [66.289, 28.137, 14.530, 8.121, 5.592],
+#     ExecTime_10K = [454.494, 285.75, 151.208, 74.494, 41.05],
    
-))
+# ))
 
-fig2 = px.line(df2, x="NumProcs", y=df2.columns[1:], title="Differences of execution time Parallel HNSW with different cores, blob data sets (remote machine)", markers=True) 
+# fig2 = px.line(df2, x="NumProcs", y=df2.columns[1:], title="Differences of execution time Parallel HNSW with different cores, blob data sets (remote machine)", markers=True) 
 
-fig2.update_layout(
-    legend_title="Approaches",
-    legend_title_font=dict(size=20),
-    legend_font=dict(size=16),
-    titlefont = dict(size=20)
-)
-fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.show()
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
 
 
 # blob 20,000
