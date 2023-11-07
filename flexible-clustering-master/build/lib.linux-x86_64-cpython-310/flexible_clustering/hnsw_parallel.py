@@ -11,7 +11,7 @@ from .unionfind import UnionFind
 # import time
 # import multiprocessing
 # from random import random
-# from multiprocessing import shared_memory, current_process
+from multiprocessing import shared_memory, current_process
 # from functools import partial
 # import timeit
 # from line_profiler import LineProfiler

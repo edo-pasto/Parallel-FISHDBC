@@ -41,20 +41,28 @@ if __name__ == '__main__':
 
 
     # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    data, labels = sklearn.datasets.make_blobs(1000, centers=5, random_state=10)
+    # data, labels = sklearn.datasets.make_blobs(160000, centers=5, random_state=10)
     # np.random.shuffle(data)
     # Y = data[100000:]
     # data = data[:100000]
 
+    bunch = sklearn.datasets.fetch_california_housing()
+    data = bunch.data
+    labels = bunch.target
+    tot_data = np.array(data)
+    data = data[:-1640]
+    Y = tot_data[-1640:]
+    print(len(Y))
+
     m = 5
     m0 = 2 * m
 ## ----------------------------------- SINGLE PROCESS HNSW----------------------------------- ##
-    start_single = time.time()
-    fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
-    single_cand_edges = fishdbc2.update(data)
-    graphs = fishdbc2.the_hnsw._graphs
-    time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
-    print("The time of execution Single HNSW:", (time_singleHNSW))
+    # start_single = time.time()
+    # fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
+    # single_cand_edges = fishdbc2.update(data)
+    # graphs = fishdbc2.the_hnsw._graphs
+    # time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
+    # print("The time of execution Single HNSW:", (time_singleHNSW))
 ## ----------------------------------- PARALLEL HNSW  ----------------------------- ##
     multiprocessing.set_start_method('fork')
     
@@ -103,8 +111,6 @@ if __name__ == '__main__':
         create=True, size=10)
     shm_count = multiprocessing.shared_memory.SharedMemory(
     create=True, size=10)
-    shm_time_localMST = multiprocessing.shared_memory.SharedMemory(
-    create=True, size=10)
 
     shm_adj = []
     shm_weights = []
@@ -124,7 +130,7 @@ if __name__ == '__main__':
     lock = manager.Lock()
     # create the hnsw parallel class object and execute with pool the add function in multiprocessing
     hnsw = hnsw_parallel.HNSW(calc_dist, data, members, levels, positions,
-                              shm_adj, shm_weights, shm_hnsw_data, shm_ent_point, shm_count, shm_time_localMST, lock, m=m, m0=m0, ef=32)
+                              shm_adj, shm_weights, shm_hnsw_data, shm_ent_point, shm_count, lock, m=m, m0=m0, ef=32)
 
     end = time.time()
     print("The time of execution of preparation for hnsw:", (end-start))
@@ -156,10 +162,10 @@ if __name__ == '__main__':
     print("The time of execution of Paralell HNSW is :", (time_parHNSW))
 ## ------------------- TAKE AND SAVE TIME OF HNSW PARALLEL ----------------
     
-    # with open("parallelHNSWText.csv", "a") as text_file:
+    # with open("../dataResults/parallelHNSW.csv", "a") as text_file:
     #     text_file.write(str(time_parHNSW) + "\n")
 
-    # df = pd.read_csv('./parallelHNSWText.csv')
+    # df = pd.read_csv('../dataResults/parallelHNSW.csv')
     # average = df.loc[:,"time"].mean()
     # print("Mean of execution time: ", average)
     # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
@@ -169,17 +175,17 @@ if __name__ == '__main__':
 ## ------------------------------------------------------------------------
 
 
-    # # take the shared numpy array from the shared memory buffer and print them
-    # start = time.time()
-    # tot_adjs = []
-    # tot_weights = []
-    # for shm1, shm2, memb, i in zip(shm_adj, shm_weights, members, range(len(members))):
-    #     adj = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
-    #                     dtype=int, buffer=shm1.buf)
-    #     tot_adjs.append(adj)
-    #     weight = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
-    #                         dtype=float, buffer=shm2.buf)
-    #     tot_weights.append(weight)
+    # take the shared numpy array from the shared memory buffer and print them
+    start = time.time()
+    tot_adjs = []
+    tot_weights = []
+    for shm1, shm2, memb, i in zip(shm_adj, shm_weights, members, range(len(members))):
+        adj = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
+                        dtype=int, buffer=shm1.buf)
+        tot_adjs.append(adj)
+        weight = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
+                            dtype=float, buffer=shm2.buf)
+        tot_weights.append(weight)
 
 
     #     # df = pd.read_csv('./searchGraphTimes.csv')
@@ -196,50 +202,50 @@ if __name__ == '__main__':
 
     # ## ----------------------------------- TEST FOR QUALITY OF THE SEARCH RESULTS ----------------------------- ##
 
-    # graphs_par = []
-    # for adjs, weights, i in zip(tot_adjs, tot_weights, range(len(tot_adjs))):
-    #     dic = {}
-    #     for adj, weight, pos in zip(adjs, weights, range(len(adjs))):
-    #         dic2 = {}
-    #         for a, w in zip(adj, weight):
-    #             if a == MISSING:
-    #                 continue
-    #             dic2[a] = w
-    #         idx =  list(positions[i].keys())[list(positions[i].values()).index(pos)]
-    #         dic[idx] = dic2
-    #     graphs_par.append(dic)
-    # # if len(Y) == 2000:
-    # X = data
-    # kdt = KDTree(X, leaf_size=30, metric='euclidean')
-    # knn_result = kdt.query(Y, k=5, return_distance=True)
-    # # x, y = data[:, 7], data[:, 8]
-    # # tree = KDTree(np.c_[x.ravel(), y.ravel()], metric='euclidean')
-    # # dd, ii = tree.query(Y, k=5)
-    # search_res_par = [hnsw.search(graphs_par, i,5) for i in Y]
-    # # search_res = [fishdbc2.the_hnsw.search(graphs,i,5, test=True) for i in Y]
-    # # print(len(search_res_par))
-    # # print(len(dd))
-    # # # compute the quality of the search results over the two hnsw with respect to a knn on a kdTree
-    # diff_el_par = 0
-    # diff_dist_par = 0
-    # for i, j, el_par in zip(knn_result[1], knn_result[0], search_res_par,):
-    #     for n1, d1, t_par in zip(i, j, el_par):
-    #         n_par, d_par = t_par
-    #         if n1 != n_par: diff_el_par +=1
-    #         if d1 != d_par: diff_dist_par +=1
-    # print(diff_el_par)
-    # # with open("qualityResult100.csv", "a") as text_file:
-    # #     # text_file.write("DiffDistPar: " + str(diff_dist_par)+"\n")
-    # #     text_file.write(str(diff_el_par) + "\n")
-    # #     # text_file.write("Different Distances NOT Par: " + str(diff_dist))
-    # #     # text_file.write("Different Elements NOT Par: "+ str(diff_el))
-    # # df = pd.read_csv('./qualityResult100.csv')
-    # # avg_err = df.loc[:,"DiffElemParall"].mean()
-    # # print("Average of Errors of HNSW Parallel: ", avg_err )
-    # # perc_err = ((avg_err * 100 ) / (len(Y) * m) )
-    # # print("Percentage of Error of HNSW Parallel", perc_err, "%")
-    # # print("Standard Deviation of Error: ", np.std(np.array( list(df["DiffElemParall"]))) )
-    # # print("Min: ",np.min(np.array( list(df["DiffElemParall"]))), "Max: ", np.max(np.array( list(df["DiffElemParall"]))) )
+    graphs_par = []
+    for adjs, weights, i in zip(tot_adjs, tot_weights, range(len(tot_adjs))):
+        dic = {}
+        for adj, weight, pos in zip(adjs, weights, range(len(adjs))):
+            dic2 = {}
+            for a, w in zip(adj, weight):
+                if a == MISSING:
+                    continue
+                dic2[a] = w
+            idx =  list(positions[i].keys())[list(positions[i].values()).index(pos)]
+            dic[idx] = dic2
+        graphs_par.append(dic)
+
+    X = data
+    kdt = KDTree(X, leaf_size=30, metric='euclidean')
+    knn_result = kdt.query(Y, k=5, return_distance=True)
+    # x, y = data[:, 7], data[:, 8]
+    # tree = KDTree(np.c_[x.ravel(), y.ravel()], metric='euclidean')
+    # dd, ii = tree.query(Y, k=5)
+    search_res_par = [hnsw.search(graphs_par, i,5) for i in Y]
+    # search_res = [fishdbc2.the_hnsw.search(graphs,i,5, test=True) for i in Y]
+    # print(len(search_res_par))
+    # print(len(dd))
+    # # compute the quality of the search results over the two hnsw with respect to a knn on a kdTree
+    diff_el_par = 0
+    diff_dist_par = 0
+    for i, j, el_par in zip(knn_result[1], knn_result[0], search_res_par,):
+        for n1, d1, t_par in zip(i, j, el_par):
+            n_par, d_par = t_par
+            if n1 != n_par: diff_el_par +=1
+            if d1 != d_par: diff_dist_par +=1
+    print(diff_el_par)
+    with open("../dataResults/qualityResult.csv", "a") as text_file:
+        # text_file.write("DiffDistPar: " + str(diff_dist_par)+"\n")
+        text_file.write(str(diff_el_par) + "\n")
+        # text_file.write("Different Distances NOT Par: " + str(diff_dist))
+        # text_file.write("Different Elements NOT Par: "+ str(diff_el))
+    df = pd.read_csv('../dataResults/qualityResult.csv')
+    avg_err = df.loc[:,"DiffElemParall"].mean()
+    print("Average of Errors of HNSW Parallel: ", avg_err )
+    perc_err = ((avg_err * 100 ) / (len(Y) * m) )
+    print("Percentage of Error of HNSW Parallel", perc_err, "%")
+    print("Standard Deviation of Error: ", np.std(np.array( list(df["DiffElemParall"]))) )
+    print("Min: ",np.min(np.array( list(df["DiffElemParall"]))), "Max: ", np.max(np.array( list(df["DiffElemParall"]))) )
 
 
 
@@ -250,8 +256,6 @@ if __name__ == '__main__':
     shm_ent_point.unlink()
     shm_count.unlink()
     shm_count.close()
-    shm_time_localMST.unlink()
-    shm_time_localMST.close()
     for i in range(len(members)):
         shm_adj[i].close()
         shm_adj[i].unlink()

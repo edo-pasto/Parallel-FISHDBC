@@ -140,20 +140,22 @@ import numpy as np
 
 # ## ------------------------------------------------------- ##
 # df9 = pd.DataFrame(dict(
-#     DataSetSize = [10000, 20000, 40000, 80000],
-#     ExecTime_lock = [18.09,  36.74, 74.13, 150.69],
-#     ExecTime_parallel = [1.57, 2.82, 5.47, 10.62 ],
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_lock = [18.09,  36.74, 74.13, 150.69, 304.58],
+#     ExecTime_NO_lock = [1.57, 2.82, 5.47, 10.62, 27.92 ],
    
 # ))
 
-# # print(df)
 # fig9 = px.line(df9, x="DataSetSize", y=df9.columns[1:], title="Differences of execution time between Parallel HNSW creation with and without lock, Blob data set (Remote Linux machine, 16 physical core)", markers=True) 
-# fig9.update_layout(
-#     xaxis_title="Data set Size",
-#     yaxis_title="Execution Time (mean)",
-#     legend_title="Approaches"
-# )
 
+# fig9.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig9.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig9.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig9.show()
 # ## ------------------------------------------------------- ##
 
@@ -216,24 +218,24 @@ import numpy as np
 
 # ---------------------------------------------
 
-df2 = pd.DataFrame(dict(
-    DataSetSize = [10000, 20000, 40000, 80000, 160000],
-    ExecTime_single = [ 3.365, 8.677, 21.702, 54.411, 257.097],
-    ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 76.406],
+# df2 = pd.DataFrame(dict(
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_single = [  6.316, 15.658, 38.314, 93.003, 215.971],
+#     ExecTime_parallel = [0.880, 2.136, 5.376, 13.281, 33.848],
    
-))
+# ))
 
-fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
+# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel MST creation, Blob data set (Remote machine, 16 cores)", markers=True) 
 
-fig2.update_layout(
-    legend_title="Approaches",
-    legend_title_font=dict(size=20),
-    legend_font=dict(size=16),
-    titlefont = dict(size=20)
-)
-fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.show()
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
 
 
 # ---------------------------------------------
@@ -257,24 +259,24 @@ fig2.show()
 # fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig2.show()
 # ---------------------------------------------
-df2 = pd.DataFrame(dict(
-    DataSetSize = [10000, 20000, 40000, 80000, 160000],
-    ExecTime_single = [ 5.119, 15.658, 34.953, 88.561, 473.755],
-    ExecTime_parallel = [ 1.001, 2.942, 6.203, 15.090, 78.435],
+# df2 = pd.DataFrame(dict(
+#     DataSetSize = [10000, 20000, 40000, 80000, 160000],
+#     ExecTime_single = [ 9.707, 27.956, 63.832, 158.977, 365.48],
+#     ExecTime_parallel = [ 1.001, 2.942, 6.203, 15.090, 37.976],
    
-))
+# ))
 
-fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time Original Single MST vs. Parallel MST creation, text data sets (remote machine, 16 physical core)", markers=True) 
+# fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time Original Single MST vs. Parallel MST creation, text data sets (remote machine, 16 physical core)", markers=True) 
 
-fig2.update_layout(
-    legend_title="Approaches",
-    legend_title_font=dict(size=20),
-    legend_font=dict(size=16),
-    titlefont = dict(size=20)
-)
-fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
-fig2.show()
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
 
 # ---------------------------------------------
 # df2 = pd.DataFrame(dict(
@@ -357,6 +359,8 @@ fig2.show()
 # fig2.update_xaxes(title='Number of processes', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig2.show()
+
+
 
 
 # blob 20,000

@@ -39,8 +39,12 @@ dataset = args.dataset.lower()
 
 if dataset == 'blob':
     data = []
-    data, labels = sklearn.datasets.make_blobs(args.nitems, 
-                                        centers=args.centers,)
+    # data, labels = sklearn.datasets.make_blobs(args.nitems, 
+    #                                     centers=args.centers,)
+    bunch = sklearn.datasets.fetch_california_housing()
+    data = bunch.data
+    labels = bunch.target
+    data = np.array(data)
 
     if dist == 'euclidean': 
         def calc_dist(x,y):     
@@ -120,10 +124,10 @@ time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
 print("The time of execution Single HNSW:", (time_singleHNSW))
 
 # ------------------- SAVE HNSW TIME --------------------
-with open("singleHNSWText.csv", "a") as text_file:
+with open("../dataResults/singleHNSW.csv", "a") as text_file:
     text_file.write(str(time_singleHNSW) + "\n")
 
-df = pd.read_csv('./singleHNSWText.csv')
+df = pd.read_csv('../dataResults/singleHNSW.csv')
 average = df.loc[:,"time"].mean()
 print("Mean of execution time: ", average)
 print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )

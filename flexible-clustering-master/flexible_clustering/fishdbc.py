@@ -222,7 +222,7 @@ class FISHDBC:
                         # print(key, -min(md, new_mrd))
                         new_edges[key] = -min(md, new_mrd)
         end = time.time()
-        self._tot_MST_time = end - start
+        self._tot_MST_time = self._tot_MST_time + (end - start)
         # print(distance_cache, idx, "\n" )
         distance_cache.clear()
         # print("hnsw graphs", self.the_hnsw._graphs)
@@ -239,11 +239,11 @@ class FISHDBC:
                 start = time.time()
                 self.update_mst()
                 end = time.time()
-                self._tot_MST_time = end - start
+                self._tot_MST_time = self._tot_MST_time + (end - start) 
         start = time.time()
         self.update_mst()
         end = time.time()
-        self._tot_MST_time = end - start
+        self._tot_MST_time = self._tot_MST_time + (end - start) 
 
     def update_mst(self):
         """Update the minimum spanning tree."""

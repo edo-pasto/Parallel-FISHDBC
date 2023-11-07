@@ -15,7 +15,7 @@ from random import random
 
 # import cProfile
 import multiprocessing
-
+from multiprocessing import shared_memory
 try:
     from math import log2
 except ImportError:  # Python 2.x or <= 3.2
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     # data = data[:20000]
 
     ## ----------------------- SYNTH DATASET TEXTUAL ---------------------------- ##
-    # realData = pd.read_csv('../data/textDataset10.csv', index_col=False)
-    # labels = pd.read_csv('../data/textDatasetLabels10.csv', index_col=False)
+    # realData = pd.read_csv('../data/textDataset160.csv', index_col=False)
+    # labels = pd.read_csv('../data/textDatasetLabels160.csv', index_col=False)
     # # labels = list(labels["label"])
     # labels = labels.values
     # li = realData.values.tolist()
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
     # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
 
-    print("Final Clustering NOT Parallel: ",ctree)
+    # print("Final Clustering NOT Parallel: ",ctree)
     # print("labels result from cluster: ", list(labels_cluster))
     end_single = time.time()
     time_singleFISHDBC = end_single - start_single
@@ -202,11 +202,11 @@ if __name__ == "__main__":
             positions[l][x] = i
 
     # create the buffer of shared memory for each levels
-    shm_hnsw_data = multiprocessing.shared_memory.SharedMemory(
+    shm_hnsw_data = shared_memory.SharedMemory(
         create=True, size=1000000000
     )
-    shm_ent_point = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
-    shm_count = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
+    shm_ent_point = shared_memory.SharedMemory(create=True, size=10)
+    shm_count = shared_memory.SharedMemory(create=True, size=10)
 
     shm_adj = []
     shm_weights = []
