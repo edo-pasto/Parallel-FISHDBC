@@ -47,7 +47,7 @@ import time
 import sys
 import multiprocessing
 from scipy.spatial import distance
-from functools import partial
+# from functools import partial
 
 MISSING = sys.maxsize
 MISSING_WEIGHT = sys.float_info.max

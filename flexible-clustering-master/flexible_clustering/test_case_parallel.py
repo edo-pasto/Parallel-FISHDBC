@@ -264,12 +264,13 @@ if __name__ == "__main__":
         # print("The time of execution of Paralell HNSW is :", (time_parHNSW))
     partial_mst = []
     mst_times = []
+    hnsw_times = []
     hnsw.hnsw_add(0)
     pool = multiprocessing.Pool(num_processes)
-    for local_mst, mst_time in pool.map(
+    for local_mst, mst_time, hnsw_time in pool.map(
         hnsw.add_and_compute_local_mst, split(range(1, len(data)), num_processes)
     ):
-        # candidate_edges.extend(partial_mst)
+        hnsw_times.append(hnsw_time)
         mst_times.append(mst_time)
         partial_mst.extend(local_mst)
     pool.close()

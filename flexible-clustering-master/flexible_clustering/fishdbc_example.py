@@ -33,6 +33,7 @@
 import numpy as np
 import pandas as pd
 import argparse
+from itertools import pairwise
 import sys
 import collections
 # from functools import partial
@@ -43,6 +44,7 @@ import sklearn.datasets
 import matplotlib.pyplot as plt
 from flexible_clustering import fishdbc
 from flexible_clustering import hnsw_parallel
+import create_text_dataset
 # from line_profiler import LineProfiler 
 import time
 import multiprocessing 
@@ -66,19 +68,22 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='blob',
                         help="dataset used by the algorithm (default: blob)."
                         "try with: blob, string,")
-    parser.add_argument('--distance', type=str, default='hamming',
+    parser.add_argument('--distance', type=str, default='euclidean',
                         help="distance metrix used by FISHDBC (default: hamming)."
                         "try with: euclidean, squeclidean, cosine, dice, minkowsky, jaccard, hamming, jensenShannon, levensthein")
-    parser.add_argument('--nitems', type=int, default=200,
-                        help="Number of items (default 200).")
+    parser.add_argument('--nitems', type=int, default=10000,
+                        help="Number of items (default 10000).")
     parser.add_argument('--niters', type=int, default=2,
                         help="Clusters are shown in NITERS stage while being "
                         "added incrementally (default 4).")
     parser.add_argument('--centers', type=int, default=5,
                         help="Number of centers for the clusters generated "
                         "(default 5).")
+    parser.add_argument('--test', type=bool, default=False,
+                        help="Option to say to perform FISHDBC clustering accuracy test"
+                        "(default False).")
     parser.add_argument("--parallel", type=str, default="0",
-                         help="option to specify if we want to execute the fishdbc with the HNSW creation parallel (True) or not paralle (False)")    
+                         help="option to specify if we want to execute the parallel FISHDBC (specifying the number of processes from1 to 16) or single process FISHDBC (0 processes)")    
     args = parser.parse_args()
 
     def plot_cluster_result(size, ctree, x, y, labels):
@@ -108,13 +113,18 @@ if __name__ == '__main__':
             plt.scatter(xknown, yknown, c=color, linewidth=0)
             plt.draw()
 
+    def split(a, n):
+        k, m = divmod(len(a), n)
+        indices = [k * i + min(i, m) for i in range(n + 1)]
+        return [a[l:r] for l, r in pairwise(indices)]
+
     dist = args.distance.lower()
     dataset = args.dataset
     parallel = int(args.parallel)
     
     if dataset == 'blob':
         data, labels = sklearn.datasets.make_blobs(args.nitems, 
-                                            centers=args.centers)
+                                            centers=args.centers, random_state=10)
         if dist == 'euclidean': 
             @njit
             def calc_dist(x,y):     
@@ -127,46 +137,41 @@ if __name__ == '__main__':
         elif dist == 'cosine':
             def calc_dist(x,y):
                 return distance.cosine(x,y)
-        elif dist == 'dice':
-            def calc_dist(x,y):
-                return distance.dice(x,y)
-        elif dist == 'jensen-shannon':
-            def calc_dist(x,y):
-                return distance.jensenshannon(x,y)
-        elif dist == 'jaccard':
-            def calc_dist(x,y):
-                return distance.jaccard(x,y)
-        elif dist == 'hamming':
-            def calc_dist(x,y):
-                return distance.hamming(x,y)
         elif dist == "minkowski":
             def calc_dist(x,y):
                 return distance.minkowski(x, y, p=2)
         else:
             raise EnvironmentError("At the moment the specified distance is not available for the blob dataset,"
-                                " try with: euclidean, sqeuclidean, cosine, dice, jensen-shannon, jaccard, hamming, minkowsky")
+                                " try with: euclidean, sqeuclidean, cosine, minkowsky")
     elif dataset == 'text':
-        realData = pd.read_csv('../data/Air_Traffic_Passenger_Statistics.csv')
-        li = realData.values.tolist()
-        data = np.asarray(li)
-        if dist == 'jaccard':
-            def calc_dist(x,y):
-                return distance.jaccard(x,y)
-        elif dist == 'hamming':
-            def calc_dist(x,y):
-                return distance.hamming(x,y)
-        elif dist == "levensthein":
+        realData = create_text_dataset.gen_dataset(args.centers, 20, args.nitems, 4)
+        labels = create_text_dataset.gen_labels(args.centers, args.nitems)
+        data = np.array(realData[0]).reshape(-1, 1)
+        labels = np.asarray(labels).reshape(-1, 1)
+        shuffled_indices = np.arange(len(data))
+        np.random.shuffle(shuffled_indices)
+        # Use the shuffled indices to rearrange both elements and labels
+        data = data[shuffled_indices]
+        labels = labels[shuffled_indices]
+        labels = [item for sublist in labels for item in sublist]
+        # if dist == 'hamming':
+        #     def calc_dist(x,y):
+        #         return distance.hamming(x,y)
+        if dist == "levensthein":
             def calc_dist(x,y):
                 return lev(x, y)
         else:
             raise EnvironmentError("At the moment the specified distance is not available for the string dataset,"
-                                    " try with: jaccard, hamming, levensthein")
+                                    " try with: levensthein")
     else:
         raise EnvironmentError("The specified dataset doesn't exist at the moment,"
         "try with: blob, text")   
 
-    x, y = data[:, 0], data[:, 1]
+    # x, y = data[:, 0], data[:, 1]
     if parallel > 0:
+        print(
+            "-------------------------- MULTI-PROCESS FISHDBC --------------------------"
+        )
         start_tot = time.time()
         m = 5 
         m0 = 2 * m
@@ -174,98 +179,181 @@ if __name__ == '__main__':
         # should inherit the calc_distance function and the orignal dataset
         multiprocessing.set_start_method('fork')
 
-        members = [[]]
-        # members[0] = list(range(len(data)))
-        levels = [ (int(-log2(random())* (1 / log2(m))) + 1) for _ in range(len(data))]
+        # assign each element to a random level
+        levels = [(int(-log2(random()) * (1 / log2(m))) + 1) for _ in range(len(data))]
         levels = sorted(enumerate(levels), key=lambda x: x[1])
-        
+
+        # insert the point in the list corresponding to the right level
+        members = [[]]
         j = 1
         level_j = []
         for i in levels:
             elem, level = i
-            if(level > j ):
+            if level > j:
                 members.append(level_j)
-                level_j=[]
-                j = j+1
+                level_j = []
+                j = j + 1
             level_j.append(elem)
-            if(j-1 > 0):
-                for i in range(j-1, 0, -1):
+            if j - 1 > 0:
+                for i in range(j - 1, 0, -1):
                     members[i].append(elem)
-        members.append(level_j)    
+        members.append(level_j)
         for i, l in zip(range(len(members)), members):
             sort = sorted(l)
             members[i] = sort
         del members[0]
       
+        # create a list of dict to associate for each point in each levels its position
         positions = []
-        for el, l in zip(members, range(len(members))): 
-            positions.append({ })
+        for el, l in zip(members, range(len(members))):
+            positions.append({})
             for i, x in enumerate(el):
                 positions[l][x] = i
-        # print("Levels: ",levels)
-        # print("Members: ",members)
+        # print("Levels: ",levels, "\n")
+        # print("Members: ",members, "\n")
         # print("Positions: ",positions, "\n")
-        shm_hnsw_data = multiprocessing.shared_memory.SharedMemory(create=True, size=10000000)
+
+        # create the buffer of shared memory for each levels
+        shm_hnsw_data = multiprocessing.shared_memory.SharedMemory(
+            create=True, size=1000000000
+        )
         shm_ent_point = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
         shm_count = multiprocessing.shared_memory.SharedMemory(create=True, size=10)
+
         shm_adj = []
         shm_weights = []
-        for i in range (len(members)):
-            npArray = np.zeros(shape=(len(members[i]), m0 if i == 0 else m) , dtype=int)
-            shm1 = multiprocessing.shared_memory.SharedMemory(create=True, size=npArray.nbytes)
+        for i in range(len(members)):
+            npArray = np.zeros(shape=(len(members[i]), m0 if i == 0 else m), dtype=int)
+            shm1 = multiprocessing.shared_memory.SharedMemory(
+                create=True, size=npArray.nbytes
+            )
             np.ndarray(npArray.shape, dtype=int, buffer=shm1.buf)[:, :] = MISSING
             shm_adj.append(shm1)
-            shm2 = multiprocessing.shared_memory.SharedMemory(create=True, size=npArray.nbytes)
+
+            shm2 = multiprocessing.shared_memory.SharedMemory(
+                create=True, size=npArray.nbytes
+            )
             np.ndarray(npArray.shape, dtype=float, buffer=shm2.buf)[:, :] = MISSING_WEIGHT
-            shm_weights.append( shm2)
+            shm_weights.append(shm2)
+
+
+        num_processes = parallel
         manager = multiprocessing.Manager()
         lock = manager.Lock()
-        # graph_lock = manager.Lock()
-        locks = [manager.Lock() for _ in range(6)]
-        end = time.time()
-        print("Execution time of preparation for HNSW Parallel :", (end-start_tot))
-        hnsw = hnsw_parallel.HNSW(calc_dist, data, members, levels, positions, shm_adj, shm_weights, shm_hnsw_data, shm_ent_point, shm_count, lock, locks, m=m, m0=m0)
 
-        #for now add the first
-        #  element not in multiprocessing
+        hnswPar = hnsw_parallel.HNSW(
+            calc_dist,
+            data,
+            members,
+            levels,
+            positions,
+            shm_adj,
+            shm_weights,
+            shm_hnsw_data,
+            shm_ent_point,
+            shm_count,
+            lock,
+            m=m,
+            m0=m0,
+            ef=32,
+        )
+
+        # add the first element not in multiprocessing for correct initialization
         start_time = time.time()
-        hnsw.hnsw_add(0)
-        with multiprocessing.Pool(parallel) as pool:
-            pool.map(hnsw.hnsw_add, range(len(hnsw.data))[1:])
+        start_time_hnsw_par = time.time()
+
+        partial_mst = []
+        mst_times = []
+        hnsw_times =[]
+        hnswPar.hnsw_add(0)
+        pool = multiprocessing.Pool(num_processes)
+        for local_mst, mst_time, hnsw_time in pool.map(
+            hnswPar.add_and_compute_local_mst, split(range(1, len(data)), num_processes)
+        ):
+            mst_times.append(mst_time)
+            hnsw_times.append(hnsw_time)
+            partial_mst.extend(local_mst)
         pool.close()
         pool.join()
-        end = time.time()
-        print("The time of execution of parallel HNSW is :", (end-start_time))
-        # sh_count = np.ndarray(shape=(1), dtype=int, buffer=shm_count.buf)
-        # print("The nbr of call to distance is :", (sh_count))
+
+        end_time_hnsw_par = time.time()
+        time_parHNSW = "{:.2f}".format(end_time_hnsw_par - start_time_hnsw_par)
+        print("The time of execution of Paralell HNSW and local MSTs is :", (time_parHNSW))
+
+        time_HNSW = np.mean(hnsw_times)
+        print(
+            "The time of execution of Paralell HNSW is :",
+            "{:.3f}".format(time_HNSW),
+        )
+        time_localMST = np.mean(mst_times)
+        print(
+            "The time of execution of Paralell local MSTs is :",
+            "{:.3f}".format(time_localMST),
+        )
 
         tot_adjs = []
         tot_weights = []
         for shm1, shm2, memb, i in zip(shm_adj, shm_weights, members, range(len(members))):
-            adj = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
-                            dtype=int, buffer=shm1.buf)
+            adj = np.ndarray(
+                shape=(len(memb), m0 if i == 0 else m), dtype=int, buffer=shm1.buf
+            )
             tot_adjs.append(adj)
-            weight = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
-                                dtype=float, buffer=shm2.buf)
+            weight = np.ndarray(
+                shape=(len(memb), m0 if i == 0 else m), dtype=float, buffer=shm2.buf
+            )
             tot_weights.append(weight)
+        # print(tot_adjs, "\n", tot_weights, "\n")
 
-        start_fishdbc = time.time()
-        fishdbcPar = fishdbc.FISHDBC(calc_dist, m, m0, vectorized=False, balanced_add=False)  
-        candidate_edges = fishdbcPar.prepare_data(tot_adjs, tot_weights, positions)
+        start = time.time()
+        # perform the final fishdbc operation, the creation of the mst and the final clustering
+        fishdbcPar = fishdbc.FISHDBC(calc_dist, m, m0, vectorized=False, balanced_add=False)
+        final_mst = hnswPar.global_mst(shm_adj, shm_weights, partial_mst, len(data))
+        end = time.time()
+        time_globalMST = end - start
+        print("The time of execution of global MST is :", "{:.3f}".format(time_globalMST))
+        time_parallelMST = time_localMST + time_globalMST
+        print(
+            "The total time of execution of MST is :",
+            "{:.3f}".format(time_parallelMST),
+        )
         n = len(data)
-        mst = fishdbcPar.create_mst(candidate_edges, n)
-        _, _, _, ctree, _, _ = fishdbcPar.cluster_prova(mst)
-        # print(graphs)
-        # print("cand edges: ",candidate_edges, "\n\n")
-        # print("mst: ",mst, "\n\n")
-        # print("final clustering: ", ctree)
-        end_fishdbc = time.time()
-        print("The time of execution of Only FISHDBC is: ", (end_fishdbc - start_fishdbc))
-        end_tot = time.time()
-        print("The Tot time of execution of HNSW + FISHDBC is: ", (end_tot - start_tot))
+        labels_cluster_par, _, _, ctree, _, _ = fishdbcPar.cluster(final_mst, parallel=True)
+        end = time.time()
+        time_parallelFISHDBC = "{:.3f}".format(end - start_time)
+        print("The time of execution of Parallel FISHDBC is :", time_parallelFISHDBC)
 
-        x, y = data[:, 0], data[:, 1]
-        # plot_cluster_result(len(data), ctree, x, y, labels)
+        if args.test == True:
+            from sklearn.metrics.cluster import (
+            adjusted_mutual_info_score,
+            adjusted_rand_score,
+            rand_score,
+            normalized_mutual_info_score,
+            homogeneity_completeness_v_measure,
+            )
+
+            AMI = adjusted_mutual_info_score(labels,labels_cluster_par)
+            NMI = normalized_mutual_info_score(labels,labels_cluster_par)
+            ARI = adjusted_rand_score(labels, labels_cluster_par)
+            RI = rand_score(labels, labels_cluster_par)
+            homogeneity, completness, v_measure = homogeneity_completeness_v_measure(
+                labels, labels_cluster_par
+            )
+            print(
+                "Adjsuted Mutual Info Score: ",
+                "{:.2f}".format(adjusted_mutual_info_score(labels, labels_cluster_par)),
+            )
+            print(
+                "Normalized Mutual Info Score: ",
+                "{:.2f}".format(normalized_mutual_info_score(labels, labels_cluster_par)),
+            )
+            print(
+                "Adjusted Rand Score: ",
+                "{:.2f}".format(adjusted_rand_score(labels, labels_cluster_par)),
+            )
+            print("Rand Score: ", "{:.2f}".format(rand_score(labels, labels_cluster_par)))
+            print(
+                "Homogeneity, Completness, V-Measure: ", (homogeneity, completness, v_measure)
+            )
 
         shm_hnsw_data.close()
         shm_hnsw_data.unlink()
@@ -279,18 +367,64 @@ if __name__ == '__main__':
             shm_weights[i].close()
             shm_weights[i].unlink()
 
+        print(
+            "___________________________________________________________________________________________\n"
+        )
     else:
-        start_time = time.time() 
-        fishdbcSingle = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)            
-        fishdbcSingle.update(data)
-        print("The time of execution of HNSW is :", fishdbcSingle._tot_time)
-        _, _, _, ctree, _, _ = fishdbcSingle.cluster()
-        # print("Result of the cluster: ",ctree)
-        end = time.time()
-        print("The Tot time of execution of FISHDBC is :", (end-start_time))
+        print(
+            "-------------------------- SINGLE PROCESS FISHDBC --------------------------"
+        )
+        start_single = time.time()
+        fishdbcSingle = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
+        single_cand_edges = fishdbcSingle.update(data)
+        graphs = fishdbcSingle.the_hnsw._graphs
+        time_singleHNSW = "{:.2f}".format(fishdbcSingle._tot_time)
+        print("The time of execution Single HNSW:", (time_singleHNSW))
+        time_singleMST = "{:.2f}".format(fishdbcSingle._tot_MST_time)
+        print("The time of execution Single MST:", (time_singleMST))
+        labels_cluster, _, _, ctree, _, _ = fishdbcSingle.cluster(parallel=False)
 
-        # plot_cluster_result(len(data), ctree, x, y, labels)
+        end_single = time.time()
+        time_singleFISHDBC = end_single - start_single
+        print(
+            "The time of execution Single FISHDBC:",
+            "{:.3f}".format(time_singleFISHDBC),
+        )
+        if argparse.test == True:
+            from sklearn.metrics.cluster import (
+            adjusted_mutual_info_score,
+            adjusted_rand_score,
+            rand_score,
+            normalized_mutual_info_score,
+            homogeneity_completeness_v_measure,
+            )
 
+            AMI = adjusted_mutual_info_score(labels,labels_cluster)
+            NMI = normalized_mutual_info_score(labels,labels_cluster)
+            ARI = adjusted_rand_score(labels, labels_cluster)
+            RI = rand_score(labels, labels_cluster)
+            homogeneity, completness, v_measure = homogeneity_completeness_v_measure(
+                labels, labels_cluster
+            )
+            print(
+                "Adjsuted Mutual Info Score: ",
+                "{:.2f}".format(adjusted_mutual_info_score(labels, labels_cluster)),
+            )
+            print(
+                "Normalized Mutual Info Score: ",
+                "{:.2f}".format(normalized_mutual_info_score(labels, labels_cluster)),
+            )
+            print(
+                "Adjusted Rand Score: ",
+                "{:.2f}".format(adjusted_rand_score(labels, labels_cluster)),
+            )
+            print("Rand Score: ", "{:.2f}".format(rand_score(labels, labels_cluster)))
+            print(
+                "Homogeneity, Completness, V-Measure: ", (homogeneity, completness, v_measure)
+            )
+        print(
+            "___________________________________________________________________________________________\n"
+        )
 
 
 

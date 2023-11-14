@@ -104,14 +104,18 @@ class HNSW:
 
     def add_and_compute_local_mst(self, points):
         distances = []
+        time_HNSW = 0
+        start = time.time()
         for point in points:
             distances.append(self.hnsw_add(point))
+        end = time.time()  
+        time_HNSW = end - start
         time_localMST = 0
         start = time.time()
         local_mst = self.local_mst(distances, points)
         end = time.time()
         time_localMST = end - start
-        return local_mst, time_localMST
+        return local_mst, time_localMST, time_HNSW
 
     def hnsw_add(self, elem):
         distance_cache = {}

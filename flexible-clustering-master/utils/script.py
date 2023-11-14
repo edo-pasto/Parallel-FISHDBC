@@ -10,14 +10,15 @@ import numpy as np
 #     Cosine = [10.900,21.225, 44.473, 94.223, 200.375 ],
 # ))
 
-# # print(df)
 # fig1 = px.line(df1, x="DataSetSize", y=df1.columns[1:], title="Execution Time with various blob dataset's sizes using different distances functions ", markers=True) 
 # fig1.update_layout(
-#     xaxis_title="Data set Size",
-#     yaxis_title="Execution Time",
-#     legend_title="Distances"
+#     legend_title="Distances",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
 # )
-
+# fig1.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig1.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig1.show()
 # ## ------------------------------------------------------- ##
 # df8 = pd.DataFrame(dict(
@@ -28,14 +29,17 @@ import numpy as np
 # ))
 
 # # print(df)
-# fig8 = px.line(df8, x="DataSetSize", y=df8.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel HNSW creation, Blob data set (Remote Linux machine, 16 physical core)", markers=True) 
-# fig8.update_layout(
-#     xaxis_title="Data set Size",
-#     yaxis_title="Execution Time (mean)",
-#     legend_title="Approaches"
-# )
+# fig2 = px.line(df8, x="DataSetSize", y=df8.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel HNSW creation, Blob data set (Remote Linux machine, 16 physical core)", markers=True) 
 
-# fig8.show()
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.show()
 
 # ## ------------------------------------------------------------- ##
 # df2 = pd.DataFrame(dict(
@@ -46,13 +50,17 @@ import numpy as np
 # ))
 
 # fig2 = px.line(df2, x="DataSetSize", y=df2.columns[1:], title="Differences of execution time (mean over 10 runs) between Single and Parallel HNSW creation, Blob data set (MacBook, 4 physical core)", markers=True) 
-# fig2.update_layout(
-#     xaxis_title="Data set Size",
-#     yaxis_title="Execution Time (mean)",
-#     legend_title="Approaches"
-# )
 
+# fig2.update_layout(
+#     legend_title="Approaches",
+#     legend_title_font=dict(size=20),
+#     legend_font=dict(size=16),
+#     titlefont = dict(size=20)
+# )
+# fig2.update_xaxes(title='Data set Size', titlefont=dict(size=22),tickfont=dict(size=22)) 
+# fig2.update_yaxes(title='Execution Time (mean)', titlefont=dict(size=22),tickfont=dict(size=22)) 
 # fig2.show()
+
 # ## ------------------------------------------------------------- ##
 # df = pd.read_csv("../dataResults/qualityResult20.csv")
 # data = list( (df["DiffElemParall"] / 10000) * 100 )

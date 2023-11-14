@@ -1,12 +1,15 @@
 import numpy as np
 import sys
 import pandas as pd
+import argparse
+from numba import njit
 from functools import partial
 from scipy.spatial import distance, KDTree
 from Levenshtein import distance as lev
 import matplotlib.pyplot as plt
 from flexible_clustering import fishdbc
 from flexible_clustering import hnsw_parallel
+import create_text_dataset
 import sklearn.datasets
 import collections
 from sklearn.neighbors import KDTree
@@ -25,55 +28,109 @@ except ImportError: # Python 2.x or <= 3.2
 MISSING = sys.maxsize
 MISSING_WEIGHT = sys.float_info.max
 
-def calc_dist(x,y):
-    return np.linalg.norm(x - y)
-# def calc_dist(x,y):
-#     return lev(x, y)
 
-# def calc_dist(x,y):
-#     return distance.jaccard(x,y)
 def split(a, n):
     k, m = divmod(len(a), n)
     indices = [k * i + min(i, m) for i in range(n + 1)]
     return [a[l:r] for l, r in pairwise(indices)]
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Show an example of running FISHDBC."
+    "This will plot points that are naturally clustered and added incrementally,"
+    "and then loop through all the hierarchical clusters recognized by the algorithm."
+    "Original clusters are shown in different colors while each cluster found by"
+    "FISHDBC is shown in red; press a key or click the mouse button to loop through clusters.")
 
+    parser.add_argument('--dataset', type=str, default='blob',
+                        help="dataset used by the algorithm (default: blob)."
+                        "try with: blob, string,")
+    parser.add_argument('--distance', type=str, default='euclidean',
+                        help="distance metrix used by FISHDBC (default: hamming)."
+                        "try with: euclidean, squeclidean, cosine, dice, minkowsky, jaccard, hamming, jensenShannon, levensthein")
+    parser.add_argument('--nitems', type=int, default=10000,
+                        help="Number of items (default 10000).")
+    parser.add_argument('--niters', type=int, default=2,
+                        help="Clusters are shown in NITERS stage while being "
+                        "added incrementally (default 4).")
+    parser.add_argument('--centers', type=int, default=5,
+                        help="Number of centers for the clusters generated "
+                        "(default 5).")
+    parser.add_argument("--parallel", type=str, default="16",
+                         help="option to specify if we want to execute the parallel FISHDBC (specifying the number of processes from1 to 16) or single process FISHDBC (0 processes)")    
+    parser.add_argument('--test', type=bool, default=False,
+                        help="Option to say to perform HNSW accuracy test, works only with blob dataset and euclidean distance "
+                        "(default False).")
+    args = parser.parse_args()
+    dist = args.distance.lower()
+    dataset = args.dataset
+    parallel = int(args.parallel)
 
-    # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
-    # data, labels = sklearn.datasets.make_blobs(160000, centers=5, random_state=10)
-    # np.random.shuffle(data)
-    # Y = data[100000:]
-    # data = data[:100000]
+    # bunch = sklearn.datasets.fetch_california_housing()
+    # data = bunch.data
+    # labels = bunch.target
+    # tot_data = np.array(data)
+    # data = data[:-1640]
+    # Y = tot_data[-1640:]
+    # print(len(Y))
+    if dataset == 'blob':
+        # create the input dataset, data element for creating the hnsw, Y element for testing the search over it
+        data, labels = sklearn.datasets.make_blobs(args.nitems, 
+                                            centers=args.centers, random_state=10)
+        if args.test == True and dist == 'euclidean':
+            np.random.shuffle(data)
+            ten_percent_index = int(0.1 * len(data))
+            print(ten_percent_index)
+            Y = data[-ten_percent_index:]
+            data = data[:-ten_percent_index]
 
-    bunch = sklearn.datasets.fetch_california_housing()
-    data = bunch.data
-    labels = bunch.target
-    tot_data = np.array(data)
-    data = data[:-1640]
-    Y = tot_data[-1640:]
-    print(len(Y))
+        if dist == 'euclidean': 
+            @njit
+            def calc_dist(x,y):     
+                return np.linalg.norm(x - y)
+                # return distance.euclidean(x, y)
+                # return mathDist(x, y)
+        elif dist == 'sqeuclidean':
+            def calc_dist(x,y): 
+                return distance.sqeuclidean(x,y)
+        elif dist == 'cosine':
+            def calc_dist(x,y):
+                return distance.cosine(x,y)
+        elif dist == "minkowski":
+            def calc_dist(x,y):
+                return distance.minkowski(x, y, p=2)
+        else:
+            raise EnvironmentError("At the moment the specified distance is not available for the blob dataset,"
+                                " try with: euclidean, sqeuclidean, cosine, minkowsky")
 
+    elif dataset == 'text':
+        realData = create_text_dataset.gen_dataset(args.centers, 20, args.nitems, 4)
+        labels = create_text_dataset.gen_labels(args.centers, args.nitems)
+        data = np.array(realData[0]).reshape(-1, 1)
+        labels = np.asarray(labels).reshape(-1, 1)
+        shuffled_indices = np.arange(len(data))
+        np.random.shuffle(shuffled_indices)
+        # Use the shuffled indices to rearrange both elements and labels
+        data = data[shuffled_indices]
+        labels = labels[shuffled_indices]
+        labels = [item for sublist in labels for item in sublist]
+        # if dist == 'hamming':
+        #     def calc_dist(x,y):
+        #         return distance.hamming(x,y)
+        if dist == "levensthein":
+            def calc_dist(x,y):
+                return lev(x, y)
+        else:
+            raise EnvironmentError("At the moment the specified distance is not available for the string dataset,"
+                                    " try with: levensthein")
     m = 5
     m0 = 2 * m
-## ----------------------------------- SINGLE PROCESS HNSW----------------------------------- ##
-    # start_single = time.time()
-    # fishdbc2 = fishdbc.FISHDBC(calc_dist, vectorized=False, balanced_add=False)
-    # single_cand_edges = fishdbc2.update(data)
-    # graphs = fishdbc2.the_hnsw._graphs
-    # time_singleHNSW = "{:.2f}".format(fishdbc2._tot_time)
-    # print("The time of execution Single HNSW:", (time_singleHNSW))
-## ----------------------------------- PARALLEL HNSW  ----------------------------- ##
+
+    print(
+            "-------------------------- MULTI-PROCESS HNSW --------------------------"
+        )
     multiprocessing.set_start_method('fork')
     
     start = time.time()
-
-    # levels = []
-    # for graph , i in zip(reversed(graphs), reversed(range(1, len(graphs)+1)) ):
-    #     for g in graph.keys():
-    #        if not any(element[0] == g for element in levels):
-    #             levels.append((g, i))
-    # levels = sorted(levels , key=lambda x: x[1])
     levels = [ (int(-log2(random())* (1 / log2(m))) + 1) for _ in range(len(data))]
     levels = sorted(enumerate(levels), key=lambda x: x[1])
     members = [[]]
@@ -129,52 +186,24 @@ if __name__ == '__main__':
     manager = multiprocessing.Manager()
     lock = manager.Lock()
     # create the hnsw parallel class object and execute with pool the add function in multiprocessing
-    hnsw = hnsw_parallel.HNSW(calc_dist, data, members, levels, positions,
-                              shm_adj, shm_weights, shm_hnsw_data, shm_ent_point, shm_count, lock, m=m, m0=m0, ef=32)
-
-    end = time.time()
-    print("The time of execution of preparation for hnsw:", (end-start))
+    hnswPar = hnsw_parallel.HNSW(calc_dist, data, members, levels, positions,
+                            shm_adj, shm_weights, shm_hnsw_data, shm_ent_point, shm_count, lock, m=m, m0=m0, ef=32)
 
     start_time = time.time()
     #for now add the first element not in multiprocessing
     start_time_hnsw_par = time.time()
 
-    num_processes = 16
-
+    num_processes = parallel
     distances_cache =[]
-
-    candidate_edges = []
-
-    distances_cache.append(hnsw.hnsw_add(0))
+    distances_cache.append(hnswPar.hnsw_add(0))
     pool = multiprocessing.Pool(num_processes)
-    for dist_cache in pool.map(hnsw.hnsw_add, range(1, len(hnsw.data))):
+    for dist_cache in pool.map(hnswPar.hnsw_add, range(1, len(hnswPar.data))):
         distances_cache.append(dist_cache)
-    # dist_cache = hnsw.hnsw_add(0)
-    # pool = multiprocessing.Pool(num_processes)
-    # for _, candidates in pool.map(hnsw.add_and_compute_local_mst, split(range(1, len(data)), num_processes)):
-    #     candidate_edges.extend(candidates)
-        # candidate_edges.extend(candidates)
     pool.close()
     pool.join()
-
     end_time_hnsw_par = time.time()
     time_parHNSW = "{:.2f}".format(end_time_hnsw_par-start_time_hnsw_par)
     print("The time of execution of Paralell HNSW is :", (time_parHNSW))
-## ------------------- TAKE AND SAVE TIME OF HNSW PARALLEL ----------------
-    
-    # with open("../dataResults/parallelHNSW.csv", "a") as text_file:
-    #     text_file.write(str(time_parHNSW) + "\n")
-
-    # df = pd.read_csv('../dataResults/parallelHNSW.csv')
-    # average = df.loc[:,"time"].mean()
-    # print("Mean of execution time: ", average)
-    # print("Standard Deviation of execution time: ", np.std(np.array( list(df["time"]))) )
-    # print("Min: ",np.min(np.array( list(df["time"]))), "Max: ", np.max(np.array( list(df["time"]))) )
-    # sh_count = np.ndarray(shape=(1), dtype=int, buffer=shm_count.buf)
-    # print("The nbr of call to distance is :", (sh_count))
-## ------------------------------------------------------------------------
-
-
     # take the shared numpy array from the shared memory buffer and print them
     start = time.time()
     tot_adjs = []
@@ -186,69 +215,43 @@ if __name__ == '__main__':
         weight = np.ndarray(shape=(len(memb), m0 if i == 0 else m),
                             dtype=float, buffer=shm2.buf)
         tot_weights.append(weight)
+    # print(tot_adjs, "\n", tot_weights, "\n")
 
-
-    #     # df = pd.read_csv('./searchGraphTimes.csv')
-    #     # sum_search = df.loc[:,"searchGraphTime"].mean()
-    #     # print("AVG time of search graph: ", sum_search )
-    #     # df2 = pd.read_csv('./selectHeuristicTimes.csv')
-    #     # sum_select = df2.loc[:,"selectHeuristicTime"].mean()
-    #     # print("AVG time of select Heuristic: ", sum_select)
-    #     # print("weights: ", tot_weights, "\n")
-    #     # print("Adjacency: ", tot_adjs, "\n")
-    #     # start = time.time()
-
-
-
+    
     # ## ----------------------------------- TEST FOR QUALITY OF THE SEARCH RESULTS ----------------------------- ##
 
-    graphs_par = []
-    for adjs, weights, i in zip(tot_adjs, tot_weights, range(len(tot_adjs))):
-        dic = {}
-        for adj, weight, pos in zip(adjs, weights, range(len(adjs))):
-            dic2 = {}
-            for a, w in zip(adj, weight):
-                if a == MISSING:
-                    continue
-                dic2[a] = w
-            idx =  list(positions[i].keys())[list(positions[i].values()).index(pos)]
-            dic[idx] = dic2
-        graphs_par.append(dic)
+    if args.test == True and dataset == 'blob' and dist == 'euclidean':
+        print(
+            "-------------------------- HNSW ACCURACY RESULTS --------------------------"
+        )
+        
+        graphs_par = []
+        for adjs, weights, i in zip(tot_adjs, tot_weights, range(len(tot_adjs))):
+            dic = {}
+            for adj, weight, pos in zip(adjs, weights, range(len(adjs))):
+                dic2 = {}
+                for a, w in zip(adj, weight):
+                    if a == MISSING:
+                        continue
+                    dic2[a] = w
+                idx =  list(positions[i].keys())[list(positions[i].values()).index(pos)]
+                dic[idx] = dic2
+            graphs_par.append(dic)
 
-    X = data
-    kdt = KDTree(X, leaf_size=30, metric='euclidean')
-    knn_result = kdt.query(Y, k=5, return_distance=True)
-    # x, y = data[:, 7], data[:, 8]
-    # tree = KDTree(np.c_[x.ravel(), y.ravel()], metric='euclidean')
-    # dd, ii = tree.query(Y, k=5)
-    search_res_par = [hnsw.search(graphs_par, i,5) for i in Y]
-    # search_res = [fishdbc2.the_hnsw.search(graphs,i,5, test=True) for i in Y]
-    # print(len(search_res_par))
-    # print(len(dd))
-    # # compute the quality of the search results over the two hnsw with respect to a knn on a kdTree
-    diff_el_par = 0
-    diff_dist_par = 0
-    for i, j, el_par in zip(knn_result[1], knn_result[0], search_res_par,):
-        for n1, d1, t_par in zip(i, j, el_par):
-            n_par, d_par = t_par
-            if n1 != n_par: diff_el_par +=1
-            if d1 != d_par: diff_dist_par +=1
-    print(diff_el_par)
-    with open("../dataResults/qualityResult.csv", "a") as text_file:
-        # text_file.write("DiffDistPar: " + str(diff_dist_par)+"\n")
-        text_file.write(str(diff_el_par) + "\n")
-        # text_file.write("Different Distances NOT Par: " + str(diff_dist))
-        # text_file.write("Different Elements NOT Par: "+ str(diff_el))
-    df = pd.read_csv('../dataResults/qualityResult.csv')
-    avg_err = df.loc[:,"DiffElemParall"].mean()
-    print("Average of Errors of HNSW Parallel: ", avg_err )
-    perc_err = ((avg_err * 100 ) / (len(Y) * m) )
-    print("Percentage of Error of HNSW Parallel", perc_err, "%")
-    print("Standard Deviation of Error: ", np.std(np.array( list(df["DiffElemParall"]))) )
-    print("Min: ",np.min(np.array( list(df["DiffElemParall"]))), "Max: ", np.max(np.array( list(df["DiffElemParall"]))) )
-
-
-
+        X = data
+        kdt = KDTree(X, leaf_size=30, metric='euclidean')
+        knn_result = kdt.query(Y, k=5, return_distance=True)
+        search_res_par = [hnswPar.search(graphs_par, i,5) for i in Y]
+        # # compute the quality of the search results over the two hnsw with respect to a knn on a kdTree
+        diff_el_par = 0
+        diff_dist_par = 0
+        for i, j, el_par in zip(knn_result[1], knn_result[0], search_res_par,):
+            for n1, d1, t_par in zip(i, j, el_par):
+                n_par, d_par = t_par
+                if n1 != n_par: diff_el_par +=1
+                if d1 != d_par: diff_dist_par +=1
+        print("Number of error during search between parallel version and state-of-the-art,", diff_el_par, "over", (ten_percent_index * m))
+   
     # close and unlink the shared memory objects
     shm_hnsw_data.close()
     shm_hnsw_data.unlink()
